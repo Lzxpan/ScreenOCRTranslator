@@ -37,9 +37,9 @@ namespace ScreenOCRTranslator
 
         private void Form1_Load(object sender, EventArgs e)
         {
-            cmbModel.SelectedIndex = 5;
+            cmbModel.SelectedIndex = 0;
             cmbLanguage.SelectedIndex = 3;
-            cmbTranslationMode.SelectedIndex = 0; // 預設 OCR 模式
+            cmbTranslationMode.SelectedIndex = 1; // 預設 OCR 模式
             // 載入儲存的 API Key 和模型
             txtApiKey.Text = Properties.Settings.Default.ApiKey;
             string savedModel = Properties.Settings.Default.ModelName;           
@@ -401,7 +401,7 @@ namespace ScreenOCRTranslator
                 {
                     txtResult.AppendText("\r\n\r\n翻譯中...\r\n");
 
-                    string prompt = $"請將以下內容翻譯成繁體中文（只輸出翻譯結果）：\n\n{text}";
+                    string prompt = $"請將以下內容翻譯成繁體中文（只輸出翻譯結果，不要多餘的抬頭、標題、註解等等，只給翻譯結果的內容）：\n\n{text}";
 
                     try
                     {
@@ -502,15 +502,18 @@ namespace ScreenOCRTranslator
         private class TranslationOverlayForm : Form
         {
             private readonly string _text;
-            private readonly Font _font;
+            private Font _font;
+
+            private readonly int _padding = 12;
+            private readonly int _durationMs = 5000; // 幾秒後自動消失（可調）
+            private Timer _closeTimer;
 
             private const int WS_EX_TRANSPARENT = 0x20;
             private const int WS_EX_NOACTIVATE = 0x08000000;
 
             public TranslationOverlayForm(string text, Rectangle region)
             {
-                _text = text;
-                _font = new Font("Microsoft JhengHei", 12, FontStyle.Bold);
+                _text = text ?? "";
 
                 StartPosition = FormStartPosition.Manual;
                 Bounds = region;
@@ -519,56 +522,127 @@ namespace ScreenOCRTranslator
                 TopMost = true;
                 ShowInTaskbar = false;
 
-                // 黑底蓋掉原畫面（想更「透明」可調 Opacity）
                 BackColor = Color.Black;
-                Opacity = 0.75;
+                Opacity = 0.85;
 
-                // 可選：幾秒後自動消失（不想自動消失就註解掉）
-                var timer = new Timer();
-                timer.Interval = 8000;
-                timer.Tick += (s, e) =>
+                // 視窗建立後再算字型（此時 ClientSize 才準）
+                Shown += (s, e) =>
                 {
-                    timer.Stop();
-                    timer.Dispose();
-                    Close();
+                    UpdateFontToFit();
+                    StartAutoCloseTimer();
+                    Invalidate();
                 };
-                timer.Start();
             }
+
+            // 更保險：不搶焦點
+            protected override bool ShowWithoutActivation => true;
 
             protected override CreateParams CreateParams
             {
                 get
                 {
                     var cp = base.CreateParams;
-                    cp.ExStyle |= WS_EX_TRANSPARENT | WS_EX_NOACTIVATE; // 點擊穿透 + 不搶焦點
+                    cp.ExStyle |= WS_EX_TRANSPARENT | WS_EX_NOACTIVATE;
                     return cp;
                 }
+            }
+
+            private void StartAutoCloseTimer()
+            {
+                _closeTimer?.Stop();
+                _closeTimer?.Dispose();
+
+                _closeTimer = new Timer();
+                _closeTimer.Interval = _durationMs;
+                _closeTimer.Tick += (s, e) =>
+                {
+                    _closeTimer.Stop();
+                    Close();
+                };
+                _closeTimer.Start();
+            }
+
+            private void UpdateFontToFit()
+            {
+                // 你可改字型：日文/中文建議微軟正黑體 / Meiryo / Yu Gothic
+                string fontName = "Microsoft JhengHei";
+                var style = FontStyle.Bold;
+
+                var available = new Size(
+                    Math.Max(1, ClientSize.Width - _padding * 2),
+                    Math.Max(1, ClientSize.Height - _padding * 2)
+                );
+
+                float best = FindBestFontSize(_text, fontName, style, available, min: 6f, max: 128f);
+
+                _font?.Dispose();
+                _font = new Font(fontName, best, style, GraphicsUnit.Point);
+            }
+
+            private static float FindBestFontSize(string text, string fontName, FontStyle style, Size area, float min, float max)
+            {
+                if (string.IsNullOrWhiteSpace(text))
+                    return min;
+
+                // 用 1pt 精度即可（要更細可改 0.5）
+                float low = min, high = max, best = min;
+
+                var flags = TextFormatFlags.WordBreak
+                          | TextFormatFlags.NoPadding
+                          | TextFormatFlags.TextBoxControl;
+
+                for (int i = 0; i < 12; i++) // 12 次二分搜尋很夠
+                {
+                    float mid = (low + high) / 2f;
+
+                    using (var f = new Font(fontName, mid, style, GraphicsUnit.Point))
+                    {
+                        // MeasureText 會依 area 寬度自動換行，回傳需要的高度
+                        Size measured = TextRenderer.MeasureText(text, f, area, flags);
+
+                        bool fits = measured.Width <= area.Width && measured.Height <= area.Height;
+
+                        if (fits)
+                        {
+                            best = mid;
+                            low = mid;
+                        }
+                        else
+                        {
+                            high = mid;
+                        }
+                    }
+                }
+
+                return Math.Max(min, best);
             }
 
             protected override void OnPaint(PaintEventArgs e)
             {
                 base.OnPaint(e);
 
-                e.Graphics.TextRenderingHint = System.Drawing.Text.TextRenderingHint.ClearTypeGridFit;
+                if (_font == null) return;
 
-                var padding = 10f;
-                var rect = new RectangleF(padding, padding, Width - padding * 2, Height - padding * 2);
+                var rect = Rectangle.Inflate(ClientRectangle, -_padding, -_padding);
 
-                using (var sf = new StringFormat
-                {
-                    Alignment = StringAlignment.Center,
-                    LineAlignment = StringAlignment.Center,
-                    Trimming = StringTrimming.EllipsisWord
-                })
-                using (var brush = new SolidBrush(Color.DeepSkyBlue))
-                {
-                    e.Graphics.DrawString(_text, _font, brush, rect, sf);
-                }
+                var flags = TextFormatFlags.HorizontalCenter
+                          | TextFormatFlags.VerticalCenter
+                          | TextFormatFlags.WordBreak
+                          | TextFormatFlags.NoPadding
+                          | TextFormatFlags.TextBoxControl;
+
+                // 用 TextRenderer 畫字，跟 MeasureText 一致（避免你遇到「算得出來但畫不出來」的落差）
+                TextRenderer.DrawText(e.Graphics, _text, _font, rect, Color.DeepSkyBlue, flags);
             }
 
             protected override void Dispose(bool disposing)
             {
-                if (disposing) _font.Dispose();
+                if (disposing)
+                {
+                    _font?.Dispose();
+                    _closeTimer?.Stop();
+                    _closeTimer?.Dispose();
+                }
                 base.Dispose(disposing);
             }
         }

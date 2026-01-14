@@ -78,16 +78,14 @@
             // 
             this.cmbModel.FormattingEnabled = true;
             this.cmbModel.Items.AddRange(new object[] {
-            "gemini-2.0-flash-lite",
-            "gemini-2.0-flash",
-            "gemini-2.5-pro",
             "gemini-2.5-flash-lite",
             "gemini-2.5-flash",
+            "gemini-2.5-pro",
             "gemini-3-flash-preview",
             "gemini-3-pro-preview"});
             this.cmbModel.Location = new System.Drawing.Point(71, 185);
             this.cmbModel.Name = "cmbModel";
-            this.cmbModel.Size = new System.Drawing.Size(121, 20);
+            this.cmbModel.Size = new System.Drawing.Size(143, 20);
             this.cmbModel.TabIndex = 3;
             // 
             // btnCapture
@@ -197,7 +195,7 @@
             "AI 圖像翻譯（高精確）"});
             this.cmbTranslationMode.Location = new System.Drawing.Point(10, 120);
             this.cmbTranslationMode.Name = "cmbTranslationMode";
-            this.cmbTranslationMode.Size = new System.Drawing.Size(121, 20);
+            this.cmbTranslationMode.Size = new System.Drawing.Size(168, 20);
             this.cmbTranslationMode.TabIndex = 11;
             // 
             // label1
@@ -212,7 +210,7 @@
             // label2
             // 
             this.label2.AutoSize = true;
-            this.label2.Location = new System.Drawing.Point(137, 123);
+            this.label2.Location = new System.Drawing.Point(184, 123);
             this.label2.Name = "label2";
             this.label2.Size = new System.Drawing.Size(77, 12);
             this.label2.TabIndex = 13;
@@ -249,7 +247,7 @@
             this.Controls.Add(this.txtApiKey);
             this.Icon = ((System.Drawing.Icon)(resources.GetObject("$this.Icon")));
             this.Name = "Form1";
-            this.Text = "ScreenOCRTranslator V0.91b";
+            this.Text = "ScreenOCRTranslator V0.92b";
             this.FormClosing += new System.Windows.Forms.FormClosingEventHandler(this.Form1_FormClosing);
             this.Load += new System.EventHandler(this.Form1_Load);
             ((System.ComponentModel.ISupportInitialize)(this.numIdleSeconds)).EndInit();
