@@ -53,7 +53,8 @@
             this.txtApiKey.Location = new System.Drawing.Point(71, 155);
             this.txtApiKey.Name = "txtApiKey";
             this.txtApiKey.Size = new System.Drawing.Size(216, 22);
-            this.txtApiKey.TabIndex = 0;
+            this.txtApiKey.TabIndex = 9;
+            this.txtApiKey.TabStop = false;
             // 
             // lblApiKey
             // 
@@ -109,7 +110,7 @@
             this.txtResult.ReadOnly = true;
             this.txtResult.ScrollBars = System.Windows.Forms.ScrollBars.Horizontal;
             this.txtResult.Size = new System.Drawing.Size(355, 201);
-            this.txtResult.TabIndex = 5;
+            this.txtResult.TabIndex = 0;
             // 
             // btnStartStop
             // 
@@ -248,7 +249,7 @@
             this.Controls.Add(this.txtApiKey);
             this.Icon = ((System.Drawing.Icon)(resources.GetObject("$this.Icon")));
             this.Name = "Form1";
-            this.Text = "ScreenOCRTranslator V0.9b";
+            this.Text = "ScreenOCRTranslator V0.91b";
             this.FormClosing += new System.Windows.Forms.FormClosingEventHandler(this.Form1_FormClosing);
             this.Load += new System.EventHandler(this.Form1_Load);
             ((System.ComponentModel.ISupportInitialize)(this.numIdleSeconds)).EndInit();

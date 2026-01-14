@@ -28,6 +28,7 @@ namespace ScreenOCRTranslator
         private bool isLeftMouseDown = false;
         private bool isSelecting = false;
         private Rectangle lastCapturedRegion;
+        private TranslationOverlayForm _overlay;
 
         public Form1()
         {
@@ -486,22 +487,91 @@ namespace ScreenOCRTranslator
         {
             if (string.IsNullOrWhiteSpace(translated)) return;
 
-            using (Graphics g = Graphics.FromHwnd(IntPtr.Zero))
+            // 關掉前一次的覆蓋視窗
+            if (_overlay != null && !_overlay.IsDisposed)
             {
-                Font font = new Font("Microsoft JhengHei", 12, FontStyle.Bold);
-                Brush brush = Brushes.DeepSkyBlue;
-                Brush bgBrush = new SolidBrush(Color.FromArgb(180, Color.Black));
-
-                SizeF textSize = g.MeasureString(translated, font);
-
-                float x = region.X + (region.Width - textSize.Width) / 2;
-                float y = region.Y + (region.Height - textSize.Height) / 2;
-
-                g.FillRectangle(bgBrush, x - 10, y - 10, textSize.Width + 20, textSize.Height + 20);
-                g.DrawString(translated, font, brush, new PointF(x, y));
+                _overlay.Close();
+                _overlay.Dispose();
+                _overlay = null;
             }
+
+            _overlay = new TranslationOverlayForm(translated, region);
+            _overlay.Show();
         }
 
+        private class TranslationOverlayForm : Form
+        {
+            private readonly string _text;
+            private readonly Font _font;
+
+            private const int WS_EX_TRANSPARENT = 0x20;
+            private const int WS_EX_NOACTIVATE = 0x08000000;
+
+            public TranslationOverlayForm(string text, Rectangle region)
+            {
+                _text = text;
+                _font = new Font("Microsoft JhengHei", 12, FontStyle.Bold);
+
+                StartPosition = FormStartPosition.Manual;
+                Bounds = region;
+
+                FormBorderStyle = FormBorderStyle.None;
+                TopMost = true;
+                ShowInTaskbar = false;
+
+                // 黑底蓋掉原畫面（想更「透明」可調 Opacity）
+                BackColor = Color.Black;
+                Opacity = 0.75;
+
+                // 可選：幾秒後自動消失（不想自動消失就註解掉）
+                var timer = new Timer();
+                timer.Interval = 8000;
+                timer.Tick += (s, e) =>
+                {
+                    timer.Stop();
+                    timer.Dispose();
+                    Close();
+                };
+                timer.Start();
+            }
+
+            protected override CreateParams CreateParams
+            {
+                get
+                {
+                    var cp = base.CreateParams;
+                    cp.ExStyle |= WS_EX_TRANSPARENT | WS_EX_NOACTIVATE; // 點擊穿透 + 不搶焦點
+                    return cp;
+                }
+            }
+
+            protected override void OnPaint(PaintEventArgs e)
+            {
+                base.OnPaint(e);
+
+                e.Graphics.TextRenderingHint = System.Drawing.Text.TextRenderingHint.ClearTypeGridFit;
+
+                var padding = 10f;
+                var rect = new RectangleF(padding, padding, Width - padding * 2, Height - padding * 2);
+
+                using (var sf = new StringFormat
+                {
+                    Alignment = StringAlignment.Center,
+                    LineAlignment = StringAlignment.Center,
+                    Trimming = StringTrimming.EllipsisWord
+                })
+                using (var brush = new SolidBrush(Color.DeepSkyBlue))
+                {
+                    e.Graphics.DrawString(_text, _font, brush, rect, sf);
+                }
+            }
+
+            protected override void Dispose(bool disposing)
+            {
+                if (disposing) _font.Dispose();
+                base.Dispose(disposing);
+            }
+        }
     }
 }
 

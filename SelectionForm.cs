@@ -13,10 +13,12 @@ namespace ScreenOCRTranslator
     {
         private Point startPoint;
         private Rectangle selectedRect;
+        private Rectangle selectedRectScreen;    // 螢幕絕對座標（回傳用）
         private bool isDragging = false;
         public event Action<Bitmap, Rectangle> OnSelectionCompleted;
 
-        public Rectangle SelectedRectangle => selectedRect;
+        // ✅ 改：回傳螢幕絕對座標
+        public Rectangle SelectedRectangle => selectedRectScreen;
 
         public SelectionForm()
         {
@@ -24,9 +26,14 @@ namespace ScreenOCRTranslator
             this.FormBorderStyle = FormBorderStyle.None;
             this.Opacity = 0.25;
             this.BackColor = Color.Gray;
-            this.WindowState = FormWindowState.Maximized;
             this.TopMost = true;
             this.Cursor = Cursors.Cross;
+            this.ShowInTaskbar = false;
+
+            var screen = Screen.FromPoint(Cursor.Position);
+            this.StartPosition = FormStartPosition.Manual;
+            this.WindowState = FormWindowState.Normal;
+            this.Bounds = screen.Bounds;
         }
 
         protected override void OnMouseDown(MouseEventArgs e)
@@ -54,28 +61,35 @@ namespace ScreenOCRTranslator
 
         protected override void OnMouseUp(MouseEventArgs e)
         {
-            if (isDragging)
+            if (!isDragging) return;
+            isDragging = false;
+
+            if (selectedRect.Width < 5 || selectedRect.Height < 5)
             {
-                isDragging = false;
-
-                if (selectedRect.Width < 5 || selectedRect.Height < 5)
-                {
-                    this.Close();
-                    return;
-                }
-
-                // 擷取圖片
-                Bitmap capture = new Bitmap(selectedRect.Width, selectedRect.Height);
-                using (Graphics g = Graphics.FromImage(capture))
-                {
-                    g.CopyFromScreen(this.PointToScreen(selectedRect.Location), Point.Empty, selectedRect.Size);
-                }
-
-                OnSelectionCompleted?.Invoke(capture, selectedRect); // 回傳給主畫面
-
-                this.DialogResult = DialogResult.OK;
                 this.Close();
+                return;
             }
+
+            // ✅ 這個才是螢幕絕對座標（可為負值、可超過主螢幕寬度）
+            var absoluteRect = new Rectangle(
+                this.Bounds.Left + selectedRect.Left,
+                this.Bounds.Top + selectedRect.Top,
+                selectedRect.Width,
+                selectedRect.Height
+            );
+
+            selectedRectScreen = absoluteRect;
+
+            Bitmap capture = new Bitmap(absoluteRect.Width, absoluteRect.Height);
+            using (Graphics g = Graphics.FromImage(capture))
+            {
+                g.CopyFromScreen(absoluteRect.Location, Point.Empty, absoluteRect.Size);
+            }
+
+            OnSelectionCompleted?.Invoke(capture, absoluteRect);
+
+            this.DialogResult = DialogResult.OK;
+            this.Close();
         }
 
         protected override void OnPaint(PaintEventArgs e)
