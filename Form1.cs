@@ -5,6 +5,7 @@ using System.Collections.Generic;
 using System.ComponentModel;
 using System.Data;
 using System.Drawing;
+using System.Drawing.Drawing2D;
 using System.Drawing.Imaging;
 using System.Linq;
 using System.Text;
@@ -12,6 +13,7 @@ using System.Threading.Tasks;
 using System.Web;
 using System.Windows.Forms;
 using Tesseract;
+using static GeminiClient;
 using static System.Net.Mime.MediaTypeNames;
 
 namespace ScreenOCRTranslator
@@ -51,6 +53,8 @@ namespace ScreenOCRTranslator
             }
             cmbTranslationMode.SelectedIndex = Properties.Settings.Default.TranslationModeIndex;
             cmbLanguage.SelectedIndex = Properties.Settings.Default.LanguageModeIndex;
+            numOverlaySeconds.Value = Math.Max(numOverlaySeconds.Minimum,
+                Math.Min(numOverlaySeconds.Maximum, Properties.Settings.Default.OverlaySeconds));
 
             monitorTimer = new System.Windows.Forms.Timer();
             monitorTimer.Interval = 200; // 每 200ms 檢查一次滑鼠
@@ -60,6 +64,8 @@ namespace ScreenOCRTranslator
             globalHook.KeyUp += GlobalHook_KeyUp;
             globalHook.MouseDownExt += GlobalHook_MouseDownExt;
             globalHook.MouseUpExt += GlobalHook_MouseUpExt;
+            linkLabel1.Links.Clear();
+            linkLabel1.Links.Add(0, linkLabel1.Text.Length, "https://aistudio.google.com/api-keys"); // LinkData 存網址
         }
 
         private void Form1_FormClosing(object sender, FormClosingEventArgs e)
@@ -68,6 +74,7 @@ namespace ScreenOCRTranslator
             Properties.Settings.Default.ModelName = cmbModel.SelectedItem?.ToString();
             Properties.Settings.Default.TranslationModeIndex = cmbTranslationMode.SelectedIndex;
             Properties.Settings.Default.LanguageModeIndex = cmbLanguage.SelectedIndex;
+            Properties.Settings.Default.OverlaySeconds = (int)numOverlaySeconds.Value;
             Properties.Settings.Default.Save(); // 寫入設定
             globalHook?.Dispose();
         }
@@ -199,8 +206,8 @@ namespace ScreenOCRTranslator
 
             public string PerformOCR(Bitmap image)
             {
-                // 將圖片放大 4 倍
-                //Bitmap scaled = new Bitmap(image, image.Width * 4, image.Height * 4);
+                // 將圖片放大 3 倍
+                Bitmap scaled = new Bitmap(image, image.Width * 3, image.Height * 3);
 
                 // 轉為灰階
                 Bitmap gray = new Bitmap(image.Width, image.Height);
@@ -259,11 +266,24 @@ namespace ScreenOCRTranslator
                 _previewControl.Image = binary; // ✅ 這裡要先傳入 previewControl（例如 PictureBox）
 
                 // 使用 Tesseract 進行辨識
-                using (var engine = new TesseractEngine(@"./tessdata", _language, EngineMode.TesseractOnly))
+                using (var engine = new TesseractEngine(@"./tessdata", _language, EngineMode.LstmOnly))
                 {
-                    using (var page = engine.Process(binary))
+                    // 小區域框選：PSM 6 通常最穩
+                    engine.DefaultPageSegMode = PageSegMode.SingleBlock;
+
+                    // 避免截圖被當成低 DPI 影像
+                    engine.SetVariable("user_defined_dpi", "300");
+
+                    // 如果你原本的 binary 是 Bitmap，這樣最保險（不依賴 engine.Process(Bitmap) 是否存在）
+                    using (var pix = PixConverter.ToPix(binary))
+                    using (var page = engine.Process(pix))
                     {
-                        return page.GetText();
+                        var text = page.GetText();
+
+                        // 你可以用它做 debug / 自動挑參數（可先印出來）
+                        var conf = page.GetMeanConfidence(); // 0~1
+
+                        return text;
                     }
                 }
             }
@@ -363,6 +383,292 @@ namespace ScreenOCRTranslator
             return avg < 128; // 小於 128 表示整體偏暗，可視為黑底白字
         }
 
+        private class DownscaleResult
+        {
+            public Bitmap Image;
+            public int SrcW, SrcH;
+            public Rectangle InkBounds;
+            public int LineCount;
+            public float EstLineH;
+            public float Scale;
+            public bool Cropped;
+        }
+
+        // 你呼叫 AI 前用這個縮圖（支援 Debug + 可裁切）
+        private static DownscaleResult DownscaleForAi(
+            Bitmap src,
+            int targetLinePx = 22,      // 想縮更小就降這個：18~24 建議
+            int minLinePx = 14,         // 保護下限：多行小字不要縮到看不清
+            bool cropToInk = true,      // ✅ 建議開：大量留白會被砍掉，縮圖會更有效
+            int cropPadPx = 6,          // 裁切邊界留白
+            int maxWidth = 1200,
+            int maxHeight = 1200,
+            int maxPixels = 350_000,    // 想更小就降：例如 250_000
+            float minScaleHard = 0.12f  // 最低縮放保險（避免變太小）
+        )
+        {
+            if (src == null) return null;
+
+            var (inkBounds, lineCount) = EstimateTextBoundsAndLineCount(src);
+
+            // 估算單行行高（用 inkBounds，單行/少字會比較準）
+            float estLineH = Math.Max(1f, (float)inkBounds.Height / Math.Max(1, lineCount));
+
+            // 1) 先決定裁切矩形（可選）
+            Rectangle cropRect = new Rectangle(0, 0, src.Width, src.Height);
+            bool cropped = false;
+
+            if (cropToInk && inkBounds.Width > 0 && inkBounds.Height > 0)
+            {
+                // 加 padding，避免切到筆畫
+                int left = Math.Max(0, inkBounds.Left - cropPadPx);
+                int top = Math.Max(0, inkBounds.Top - cropPadPx);
+                int right = Math.Min(src.Width, inkBounds.Right + cropPadPx);
+                int bottom = Math.Min(src.Height, inkBounds.Bottom + cropPadPx);
+                cropRect = Rectangle.FromLTRB(left, top, right, bottom);
+
+                // 避免裁太小（極端情況）
+                if (cropRect.Width >= 20 && cropRect.Height >= 20)
+                    cropped = true;
+                else
+                    cropRect = new Rectangle(0, 0, src.Width, src.Height);
+            }
+
+            // 2) 用行高決定縮放：希望縮到 targetLinePx，但不低於 minLinePx
+            //    scaleWanted：把 estLineH 縮到 targetLinePx
+            //    scaleMinByLine：保證縮完後行高 >= minLinePx
+            float scaleWanted = targetLinePx / estLineH;
+            float scaleMinByLine = minLinePx / estLineH;
+
+            // 我們只做「縮小」，不放大，所以 clamp 到 <= 1
+            float scaleByLine = Math.Min(1f, scaleWanted);
+
+            // 但也不要縮到小於 minLinePx（縮太小 AI 反而看不清）
+            scaleByLine = Math.Max(scaleByLine, Math.Min(1f, scaleMinByLine));
+
+            // 3) 尺寸與像素上限保護（用裁切後的尺寸來算）
+            int baseW = cropRect.Width;
+            int baseH = cropRect.Height;
+
+            float scaleByDim = Math.Min(1f, Math.Min((float)maxWidth / baseW, (float)maxHeight / baseH));
+
+            long pixels = (long)baseW * baseH;
+            float scaleByPixels = (pixels > maxPixels)
+                ? (float)Math.Sqrt(maxPixels / (double)pixels)
+                : 1f;
+
+            // 最終縮放取最小（最嚴格）
+            float scale = Math.Min(scaleByLine, Math.Min(scaleByDim, scaleByPixels));
+
+            // 最低縮放保險
+            scale = Math.Max(scale, minScaleHard);
+
+            // 4) 先裁切，再縮放（都會產生新 bitmap）
+            Bitmap working = CropBitmap(src, cropRect);     // 一律 new
+            Bitmap resized = working;
+
+            if (scale < 0.999f)
+            {
+                int newW = Math.Max(1, (int)Math.Round(working.Width * scale));
+                int newH = Math.Max(1, (int)Math.Round(working.Height * scale));
+
+                resized = ResizeBitmap(working, newW, newH);
+                working.Dispose();
+            }
+
+            return new DownscaleResult
+            {
+                Image = resized,
+                SrcW = src.Width,
+                SrcH = src.Height,
+                InkBounds = inkBounds,
+                LineCount = Math.Max(1, lineCount),
+                EstLineH = estLineH,
+                Scale = scale,
+                Cropped = cropped
+            };
+        }
+
+        private static Bitmap CropBitmap(Bitmap src, Rectangle rect)
+        {
+            // rect 若剛好是全圖，也會 clone 一份，確保呼叫端可 Dispose
+            var dst = new Bitmap(rect.Width, rect.Height, PixelFormat.Format24bppRgb);
+            using (var g = Graphics.FromImage(dst))
+            {
+                g.InterpolationMode = InterpolationMode.NearestNeighbor;
+                g.DrawImage(src, new Rectangle(0, 0, rect.Width, rect.Height), rect, GraphicsUnit.Pixel);
+            }
+            return dst;
+        }
+
+
+        private static Bitmap ResizeBitmap(Bitmap src, int newW, int newH)
+        {
+            var dst = new Bitmap(newW, newH, PixelFormat.Format24bppRgb);
+            using (var g = Graphics.FromImage(dst))
+            {
+                g.InterpolationMode = InterpolationMode.HighQualityBicubic;
+                g.PixelOffsetMode = PixelOffsetMode.HighQuality;
+                g.SmoothingMode = SmoothingMode.None;
+                g.DrawImage(src, new Rectangle(0, 0, newW, newH));
+            }
+            return dst;
+        }
+
+        /// <summary>
+        /// 會同時嘗試「深色字」與「淺色字」兩種 ink，選擇更像文字的那個（避免把黑底條當成文字）
+        /// </summary>
+        private static (Rectangle inkBounds, int lineCount) EstimateTextBoundsAndLineCount(Bitmap bmp)
+        {
+            int w = bmp.Width, h = bmp.Height;
+
+            // 背景亮度：取四邊取樣中位數
+            List<int> samples = new List<int>();
+            int stepEdgeX = Math.Max(1, w / 60);
+            int stepEdgeY = Math.Max(1, h / 60);
+
+            for (int x = 0; x < w; x += stepEdgeX)
+            {
+                samples.Add(Luma(bmp.GetPixel(x, 0)));
+                samples.Add(Luma(bmp.GetPixel(x, h - 1)));
+            }
+            for (int y = 0; y < h; y += stepEdgeY)
+            {
+                samples.Add(Luma(bmp.GetPixel(0, y)));
+                samples.Add(Luma(bmp.GetPixel(w - 1, y)));
+            }
+            samples.Sort();
+            int bg = samples.Count > 0 ? samples[samples.Count / 2] : 255;
+
+            int tol = 40; // 30~60 可調
+            int step = Math.Max(1, Math.Min(w, h) / 350);
+
+            // 兩種候選：darkInk(比背景暗) / lightInk(比背景亮)
+            var candDark = MeasureInkCandidate(bmp, bg, tol, step, wantLightInk: false);
+            var candLight = MeasureInkCandidate(bmp, bg, tol, step, wantLightInk: true);
+
+            // 選「更像文字」的：ink 佔比要小（文字通常是少數），但不能太少到是雜訊
+            InkCandidate best = ChooseBetterCandidate(candDark, candLight);
+
+            if (!best.Valid)
+                return (new Rectangle(0, 0, w, h), 1);
+
+            return (best.Bounds, Math.Max(1, best.Lines));
+        }
+
+        private struct InkCandidate
+        {
+            public bool Valid;
+            public Rectangle Bounds;
+            public int Lines;
+            public double FillRatio; // 0~1
+        }
+
+        private static InkCandidate ChooseBetterCandidate(InkCandidate a, InkCandidate b)
+        {
+            // 合理文字佔比範圍（太大多半是背景塊，太小多半是雜訊）
+            bool aOk = a.Valid && a.FillRatio >= 0.002 && a.FillRatio <= 0.45;
+            bool bOk = b.Valid && b.FillRatio >= 0.002 && b.FillRatio <= 0.45;
+
+            if (aOk && bOk) return (a.FillRatio <= b.FillRatio) ? a : b;
+            if (aOk) return a;
+            if (bOk) return b;
+
+            // 退一步：至少挑一個 valid 的
+            if (a.Valid && b.Valid) return (a.FillRatio <= b.FillRatio) ? a : b;
+            if (a.Valid) return a;
+            if (b.Valid) return b;
+            return default;
+        }
+
+        private static InkCandidate MeasureInkCandidate(Bitmap bmp, int bg, int tol, int step, bool wantLightInk)
+        {
+            int w = bmp.Width, h = bmp.Height;
+
+            int minX = w, minY = h, maxX = -1, maxY = -1;
+
+            bool[] rowInk = new bool[h];
+            long inkTotal = 0;
+            long sampleTotal = 0;
+
+            for (int y = 0; y < h; y += step)
+            {
+                int inkCountRow = 0;
+                int sampleCountRow = 0;
+
+                for (int x = 0; x < w; x += step)
+                {
+                    sampleCountRow++;
+                    int l = Luma(bmp.GetPixel(x, y));
+
+                    bool isInk = wantLightInk
+                        ? (l > bg + tol)
+                        : (l < bg - tol);
+
+                    if (isInk)
+                    {
+                        inkCountRow++;
+                        if (x < minX) minX = x;
+                        if (x > maxX) maxX = x;
+                        if (y < minY) minY = y;
+                        if (y > maxY) maxY = y;
+                    }
+                }
+
+                inkTotal += inkCountRow;
+                sampleTotal += sampleCountRow;
+
+                if (sampleCountRow > 0 && inkCountRow > sampleCountRow * 0.02) // 2%
+                    rowInk[y] = true;
+            }
+
+            if (maxX < 0 || sampleTotal == 0)
+                return default;
+
+            // 行數：rowInk 連續區塊
+            int lines = 0;
+            bool inLine = false;
+            int gap = 0;
+            int maxGap = Math.Max(2, 3 * step);
+
+            for (int y = 0; y < h; y++)
+            {
+                bool has = rowInk[y];
+                if (has)
+                {
+                    if (!inLine)
+                    {
+                        inLine = true;
+                        lines++;
+                    }
+                    gap = 0;
+                }
+                else if (inLine)
+                {
+                    gap++;
+                    if (gap > maxGap) inLine = false;
+                }
+            }
+            if (lines < 1) lines = 1;
+
+            var bounds = Rectangle.FromLTRB(
+                Math.Max(0, minX - step * 3),
+                Math.Max(0, minY - step * 3),
+                Math.Min(w, maxX + step * 3),
+                Math.Min(h, maxY + step * 3)
+            );
+
+            return new InkCandidate
+            {
+                Valid = bounds.Width > 0 && bounds.Height > 0,
+                Bounds = bounds,
+                Lines = lines,
+                FillRatio = inkTotal / (double)sampleTotal
+            };
+        }
+
+        private static int Luma(Color c) => (c.R * 299 + c.G * 587 + c.B * 114) / 1000;
+
         private async Task HandleCapturedImage(Bitmap captured)
         {
             picturePreview.Image = captured;
@@ -401,15 +707,39 @@ namespace ScreenOCRTranslator
                 {
                     txtResult.AppendText("\r\n\r\n翻譯中...\r\n");
 
-                    string prompt = $"請將以下內容翻譯成繁體中文（只輸出翻譯結果，不要多餘的抬頭、標題、註解等等，只給翻譯結果的內容）：\n\n{text}";
+                    string prompt = $"請將以下內容翻譯成繁體中文（只輸出翻譯後的中文，不需解釋或開場白）：\n\n{text}";
 
                     try
                     {
-                        translated = await geminiClient.TranslateText(prompt);
+                        var gr = await geminiClient.TranslateTextEx(prompt);
+
+                        if (!string.IsNullOrWhiteSpace(gr.Error) || gr.HttpStatus != 200)
+                        {
+                            // ✅ 明確顯示 429 / 配額 / retry 秒數
+                            txtResult.AppendText($"\r\n\r\n翻譯失敗（HTTP {gr.HttpStatus}）：\r\n{gr.Error}\r\n");
+
+                            if (gr.IsDailyQuotaExceeded)
+                                txtResult.AppendText("\r\n[判斷] 免費層「當日請求數」已達上限（常見 20/日）。\r\n");
+                            if (gr.RetryAfterSeconds.HasValue)
+                                txtResult.AppendText($"[建議] 退避等待：{gr.RetryAfterSeconds.Value} 秒後再試（若為日配額，等待秒數不一定有用）。\r\n");
+
+                            lblStatus.Text = $"429/配額：{(gr.IsDailyQuotaExceeded ? "當日上限" : "請稍後再試")}";
+                            return;
+                        }
+
+                        translated = gr.Text;
+
+                        // ✅ 顯示 token
+                        if (gr.Usage != null)
+                        {
+                            UpdateTokensUi(gr.Usage);
+                        }
+
                         txtResult.AppendText($"\r\n\r\n翻譯結果：\r\n{translated}");
                     }
                     catch (Exception ex)
                     {
+                        UpdateTokensUi(null);
                         txtResult.AppendText($"\r\n\r\n翻譯失敗: {ex.Message}");
                     }
                 }
@@ -417,23 +747,77 @@ namespace ScreenOCRTranslator
             else if (selectedMode == 1) // AI 直接圖像翻譯
             {
 
-                txtResult.Text = "AI 圖像翻譯中...";
+                txtResult.Text = "AI 圖像翻譯中...\r\n";
 
                 try
                 {
-                    translated = await geminiClient.SendImageForOCRAndTranslate(captured);
+                    DownscaleResult ds = null;
+
+                    try
+                    {
+                        ds = DownscaleForAi(
+                            captured,
+                            targetLinePx: 16,     // ✅ 想「再小一點」就 16~18
+                            minLinePx: 14,        // ✅ 多行小字保護
+                            cropToInk: true,      // ✅ 強烈建議
+                            cropPadPx: 6,
+                            maxPixels: 200_000    // ✅ 想再小就降，例如 200_000
+                        );
+
+                        txtResult.AppendText(
+                            $"[原始框選圖] {ds.SrcW}x{ds.SrcH}px\r\n" +
+                            $"[InkBounds] {ds.InkBounds} lines={ds.LineCount} estLineH={ds.EstLineH:F1}px\r\n" +
+                            $"[裁切] {(ds.Cropped ? "Y" : "N")}  [縮放] scale={ds.Scale:F3}\r\n" +
+                            $"[AI送出圖] {ds.Image.Width}x{ds.Image.Height}px\r\n" +
+                            $"(提示：右邊預覽若為實際大小)\r\n\r\n"
+                        );
+
+                        // debug 預覽
+                        picturePreview.Image = (Bitmap)ds.Image.Clone();
+
+                        var gr = await geminiClient.SendImageForOCRAndTranslateEx(ds.Image);
+
+                        if (!string.IsNullOrWhiteSpace(gr.Error) || gr.HttpStatus != 200)
+                        {
+                            txtResult.AppendText($"\r\n\r\nAI 圖像翻譯失敗（HTTP {gr.HttpStatus}）：\r\n{gr.Error}\r\n");
+
+                            if (gr.IsDailyQuotaExceeded)
+                                txtResult.AppendText("\r\n[判斷] 免費層「當日請求數」已達上限（常見 20/日）。\r\n");
+                            if (gr.RetryAfterSeconds.HasValue)
+                                txtResult.AppendText($"[建議] 退避等待：{gr.RetryAfterSeconds.Value} 秒後再試（若為日配額，等待秒數不一定有用）。\r\n");
+
+                            lblStatus.Text = $"429/配額：{(gr.IsDailyQuotaExceeded ? "當日上限" : "請稍後再試")}";
+                            return;
+                        }
+
+                        translated = gr.Text;
+
+                        if (gr.Usage != null)
+                        {
+                            UpdateTokensUi(gr.Usage);
+                        }
+                    }
+                    finally
+                    {
+                        ds?.Image?.Dispose();
+                    }
+
                     txtResult.AppendText($"\r\n\r\n翻譯結果：\r\n{translated}");
                 }
                 catch (Exception ex)
                 {
+                    UpdateTokensUi(null);
                     txtResult.AppendText($"\r\n\r\nAI 圖像翻譯失敗：{ex.Message}");
                 }
             }
 
-            // 顯示翻譯結果到畫面上（畫上去）
-            if (!string.IsNullOrWhiteSpace(translated))
+            if (!string.IsNullOrWhiteSpace(translated) && !translated.StartsWith("錯誤："))
             {
                 DrawTranslatedText(translated, lastCapturedRegion);
+            }
+            else if (!string.IsNullOrWhiteSpace(translated))
+            {
+                SafeStatus(translated); // 把錯誤留在狀態列
             }
         }
 
@@ -451,6 +835,22 @@ namespace ScreenOCRTranslator
 
         private void GlobalHook_MouseDownExt(object sender, MouseEventExtArgs e)
         {
+            // ✅ 右鍵：若游標在 overlay 範圍內，立即關閉
+            if (e.Button == MouseButtons.Right)
+            {
+                var ov = _overlay; // local snapshot
+                if (ov != null && !ov.IsDisposed && ov.Visible)
+                {
+                    Point p = Cursor.Position;
+                    if (ov.Bounds.Contains(p))
+                    {
+                        CloseOverlay();
+                        e.Handled = true; // 避免右鍵穿透到底下程式彈選單
+                        return;
+                    }
+                }
+            }
+
             if (e.Button == MouseButtons.Left && isQPressed)
             {
                 isLeftMouseDown = true;
@@ -467,36 +867,149 @@ namespace ScreenOCRTranslator
             }
         }
 
+        private void SafeStatus(string msg)
+        {
+            if (IsDisposed) return;
+            if (InvokeRequired) { BeginInvoke(new Action(() => SafeStatus(msg))); return; }
+
+            // 你已有 lblStatus 在用（監聽中/擷取中），這裡直接沿用
+            lblStatus.Text = msg;
+        }
+
         private void StartSelectionOverlay()
         {
             if (isSelecting) return;
             isSelecting = true;
 
             var selector = new SelectionForm();
-            selector.OnSelectionCompleted += (img, region) =>
+            bool completed = false;
+
+            selector.OnSelectionCompleted += async (img, region) =>
             {
-                lastCapturedRegion = region; // ✅ 設定選取區域
-                HandleCapturedImage(img);
-                isSelecting = false; // 解鎖
+                completed = true;
+                lastCapturedRegion = region;
+
+                try
+                {
+                    await HandleCapturedImage(img);   // ✅ 等翻譯/流程跑完
+                }
+                catch (Exception ex)
+                {
+                    // 避免 async void 事件吃掉例外
+                    SafeStatus($"處理失敗：{ex.Message}");
+                }
+                finally
+                {
+                    isSelecting = false;              // ✅ 只在流程完成後才解鎖
+                }
             };
-            selector.FormClosed += (s, e) => isSelecting = false; // 雙保險
+
+            selector.FormClosed += (s, e) =>
+            {
+                // 只有「使用者取消/沒完成選取」才在這裡解鎖
+                if (!completed) isSelecting = false;
+            };
+
             selector.Show();
+        }
+
+        private void CloseOverlay()
+        {
+            // 如果 Form1 都快被關了，就不要做事
+            if (this.IsDisposed) return;
+
+            // 全域 hook 可能不在 UI thread：一律轉回 UI thread 做 Close/Dispose
+            if (this.InvokeRequired)
+            {
+                try { this.BeginInvoke(new Action(CloseOverlay)); }
+                catch { /* 可能正在關閉程式，忽略 */ }
+                return;
+            }
+
+            // 用 local snapshot，避免 _overlay 在中途被別的地方設成 null
+            var ov = _overlay;
+            if (ov == null) return;
+
+            // 先把欄位清掉，避免 re-entrancy（例如 Close() 觸發 FormClosed 又來 CloseOverlay）
+            _overlay = null;
+
+            try
+            {
+                if (!ov.IsDisposed)
+                {
+                    ov.Close();   // 讓它正常走關閉流程
+                }
+            }
+            catch
+            {
+                // close 途中被關/被 dispose 都可能，吞掉即可
+            }
+            finally
+            {
+                try { ov.Dispose(); } catch { }
+            }
+        }
+
+        private void UpdateTokensUi(GeminiUsage usage)
+        {
+            if (IsDisposed) return;
+
+            if (InvokeRequired)
+            {
+                BeginInvoke(new Action(() => UpdateTokensUi(usage)));
+                return;
+            }
+
+            if (lblTokens == null) return;
+
+            if (usage == null)
+            {
+                lblTokens.Text = "Tokens: -";
+                return;
+            }
+
+            string p = usage.PromptTokenCount?.ToString() ?? "-";
+            string c = usage.CandidatesTokenCount?.ToString() ?? "-";
+            string t = usage.TotalTokenCount?.ToString() ?? "-";
+
+            string th = usage.ThoughtsTokenCount?.ToString();
+            string tool = usage.ToolUsePromptTokenCount?.ToString();
+            string cache = usage.CachedContentTokenCount?.ToString();
+
+            var extra = new List<string>();
+            if (!string.IsNullOrEmpty(th)) extra.Add($"thoughts={th}");
+            if (!string.IsNullOrEmpty(tool)) extra.Add($"tool={tool}");
+            if (!string.IsNullOrEmpty(cache)) extra.Add($"cache={cache}");
+
+            lblTokens.Text = extra.Count == 0
+                ? $"Tokens: prompt={p}, out={c}, total={t}"
+                : $"Tokens: prompt={p}, out={c}, {string.Join(", ", extra)}, total={t}";
         }
 
         private void DrawTranslatedText(string translated, Rectangle region)
         {
             if (string.IsNullOrWhiteSpace(translated)) return;
 
-            // 關掉前一次的覆蓋視窗
-            if (_overlay != null && !_overlay.IsDisposed)
-            {
-                _overlay.Close();
-                _overlay.Dispose();
-                _overlay = null;
-            }
+            CloseOverlay(); // ✅ 統一用安全版
 
-            _overlay = new TranslationOverlayForm(translated, region);
+            int durationMs = GetOverlayDurationMs();
+            _overlay = new TranslationOverlayForm(translated, region, durationMs);
+
+            // 可選但建議：overlay 自己關閉後，把引用清掉，避免你後面判斷 _overlay 時卡在已 disposed 的物件
+            _overlay.FormClosed += (s, e) =>
+            {
+                if (ReferenceEquals(_overlay, s)) _overlay = null;
+            };
+
             _overlay.Show();
+        }
+
+        private int GetOverlayDurationMs()
+        {
+            int sec = 10;
+            try { sec = (int)numOverlaySeconds.Value; } catch { }
+            sec = Math.Max(1, sec);
+            return sec * 1000;
         }
 
         private class TranslationOverlayForm : Form
@@ -505,15 +1018,16 @@ namespace ScreenOCRTranslator
             private Font _font;
 
             private readonly int _padding = 12;
-            private readonly int _durationMs = 5000; // 幾秒後自動消失（可調）
+            private readonly int _durationMs; // 幾秒後自動消失（可調）
             private Timer _closeTimer;
 
             private const int WS_EX_TRANSPARENT = 0x20;
             private const int WS_EX_NOACTIVATE = 0x08000000;
 
-            public TranslationOverlayForm(string text, Rectangle region)
+            public TranslationOverlayForm(string text, Rectangle region, int durationMs)
             {
                 _text = text ?? "";
+                _durationMs = Math.Max(200, durationMs); // 200ms 做個保護下限，避免有人設到 0
 
                 StartPosition = FormStartPosition.Manual;
                 Bounds = region;
@@ -644,6 +1158,23 @@ namespace ScreenOCRTranslator
                     _closeTimer?.Dispose();
                 }
                 base.Dispose(disposing);
+            }
+        }
+
+        private void linkLabel1_LinkClicked(object sender, LinkLabelLinkClickedEventArgs e)
+        {
+            string url = e.Link.LinkData as string ?? e.Link.ToString();
+            if (string.IsNullOrWhiteSpace(url)) return;
+
+            try
+            {
+                // 使用 ProcessStartInfo 確保以預設瀏覽器開啟
+                var psi = new System.Diagnostics.ProcessStartInfo(url) { UseShellExecute = true };
+                System.Diagnostics.Process.Start(psi);
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show("無法開啟網址: " + ex.Message);
             }
         }
     }

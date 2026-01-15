@@ -44,8 +44,14 @@
             this.label1 = new System.Windows.Forms.Label();
             this.label2 = new System.Windows.Forms.Label();
             this.label3 = new System.Windows.Forms.Label();
+            this.label4 = new System.Windows.Forms.Label();
+            this.numOverlaySeconds = new System.Windows.Forms.NumericUpDown();
+            this.lblTokens = new System.Windows.Forms.Label();
+            this.linkLabel1 = new System.Windows.Forms.LinkLabel();
+            this.label5 = new System.Windows.Forms.Label();
             ((System.ComponentModel.ISupportInitialize)(this.numIdleSeconds)).BeginInit();
             ((System.ComponentModel.ISupportInitialize)(this.picturePreview)).BeginInit();
+            ((System.ComponentModel.ISupportInitialize)(this.numOverlaySeconds)).BeginInit();
             this.SuspendLayout();
             // 
             // txtApiKey
@@ -167,8 +173,8 @@
             this.picturePreview.BorderStyle = System.Windows.Forms.BorderStyle.FixedSingle;
             this.picturePreview.Location = new System.Drawing.Point(371, 240);
             this.picturePreview.Name = "picturePreview";
-            this.picturePreview.Size = new System.Drawing.Size(300, 201);
-            this.picturePreview.SizeMode = System.Windows.Forms.PictureBoxSizeMode.Zoom;
+            this.picturePreview.Size = new System.Drawing.Size(545, 201);
+            this.picturePreview.SizeMode = System.Windows.Forms.PictureBoxSizeMode.CenterImage;
             this.picturePreview.TabIndex = 9;
             this.picturePreview.TabStop = false;
             // 
@@ -203,18 +209,18 @@
             this.label1.AutoSize = true;
             this.label1.Location = new System.Drawing.Point(137, 97);
             this.label1.Name = "label1";
-            this.label1.Size = new System.Drawing.Size(77, 12);
+            this.label1.Size = new System.Drawing.Size(209, 12);
             this.label1.TabIndex = 12;
-            this.label1.Text = "OCR辨識語系";
+            this.label1.Text = "OCR辨識語系，使用AI路徑時請無視。";
             // 
             // label2
             // 
             this.label2.AutoSize = true;
             this.label2.Location = new System.Drawing.Point(184, 123);
             this.label2.Name = "label2";
-            this.label2.Size = new System.Drawing.Size(77, 12);
+            this.label2.Size = new System.Drawing.Size(269, 12);
             this.label2.TabIndex = 13;
-            this.label2.Text = "翻譯路徑選擇";
+            this.label2.Text = "翻譯路徑選擇，AI路經無視語言，一率翻成繁中。";
             // 
             // label3
             // 
@@ -225,11 +231,78 @@
             this.label3.TabIndex = 14;
             this.label3.Text = "按著Q+滑鼠左鍵，即可啟動框選擷取。";
             // 
+            // label4
+            // 
+            this.label4.AutoSize = true;
+            this.label4.Location = new System.Drawing.Point(145, 12);
+            this.label4.Name = "label4";
+            this.label4.Size = new System.Drawing.Size(109, 12);
+            this.label4.TabIndex = 15;
+            this.label4.Text = "翻譯覆蓋顯示(秒)：";
+            // 
+            // numOverlaySeconds
+            // 
+            this.numOverlaySeconds.Location = new System.Drawing.Point(260, 8);
+            this.numOverlaySeconds.Maximum = new decimal(new int[] {
+            30,
+            0,
+            0,
+            0});
+            this.numOverlaySeconds.Minimum = new decimal(new int[] {
+            3,
+            0,
+            0,
+            0});
+            this.numOverlaySeconds.Name = "numOverlaySeconds";
+            this.numOverlaySeconds.Size = new System.Drawing.Size(53, 22);
+            this.numOverlaySeconds.TabIndex = 16;
+            this.numOverlaySeconds.Value = new decimal(new int[] {
+            5,
+            0,
+            0,
+            0});
+            // 
+            // lblTokens
+            // 
+            this.lblTokens.AutoSize = true;
+            this.lblTokens.Location = new System.Drawing.Point(91, 216);
+            this.lblTokens.Name = "lblTokens";
+            this.lblTokens.Size = new System.Drawing.Size(73, 12);
+            this.lblTokens.TabIndex = 17;
+            this.lblTokens.Text = "消耗Tokens: -";
+            // 
+            // linkLabel1
+            // 
+            this.linkLabel1.AutoSize = true;
+            this.linkLabel1.Font = new System.Drawing.Font("新細明體", 12F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(136)));
+            this.linkLabel1.Location = new System.Drawing.Point(317, 158);
+            this.linkLabel1.Name = "linkLabel1";
+            this.linkLabel1.Size = new System.Drawing.Size(172, 16);
+            this.linkLabel1.TabIndex = 18;
+            this.linkLabel1.TabStop = true;
+            this.linkLabel1.Tag = "";
+            this.linkLabel1.Text = "前往取得Gemini API key";
+            this.linkLabel1.LinkClicked += new System.Windows.Forms.LinkLabelLinkClickedEventHandler(this.linkLabel1_LinkClicked);
+            // 
+            // label5
+            // 
+            this.label5.AutoSize = true;
+            this.label5.Location = new System.Drawing.Point(145, 38);
+            this.label5.Name = "label5";
+            this.label5.Size = new System.Drawing.Size(281, 12);
+            this.label5.TabIndex = 19;
+            this.label5.Text = "文在文字顯示區域按下滑鼠右鍵可立即關閉顯示文字";
+            // 
             // Form1
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(6F, 12F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
-            this.ClientSize = new System.Drawing.Size(735, 450);
+            this.ClientSize = new System.Drawing.Size(928, 450);
+            this.Controls.Add(this.label5);
+            this.Controls.Add(this.linkLabel1);
+            this.Controls.Add(this.lblTokens);
+            this.Controls.Add(this.numOverlaySeconds);
+            this.Controls.Add(this.label4);
             this.Controls.Add(this.label3);
             this.Controls.Add(this.label2);
             this.Controls.Add(this.label1);
@@ -247,11 +320,12 @@
             this.Controls.Add(this.txtApiKey);
             this.Icon = ((System.Drawing.Icon)(resources.GetObject("$this.Icon")));
             this.Name = "Form1";
-            this.Text = "ScreenOCRTranslator V0.92b";
+            this.Text = "ScreenOCRTranslator V0.93b";
             this.FormClosing += new System.Windows.Forms.FormClosingEventHandler(this.Form1_FormClosing);
             this.Load += new System.EventHandler(this.Form1_Load);
             ((System.ComponentModel.ISupportInitialize)(this.numIdleSeconds)).EndInit();
             ((System.ComponentModel.ISupportInitialize)(this.picturePreview)).EndInit();
+            ((System.ComponentModel.ISupportInitialize)(this.numOverlaySeconds)).EndInit();
             this.ResumeLayout(false);
             this.PerformLayout();
 
@@ -274,6 +348,11 @@
         private System.Windows.Forms.Label label1;
         private System.Windows.Forms.Label label2;
         private System.Windows.Forms.Label label3;
+        private System.Windows.Forms.Label label4;
+        private System.Windows.Forms.NumericUpDown numOverlaySeconds;
+        private System.Windows.Forms.Label lblTokens;
+        private System.Windows.Forms.LinkLabel linkLabel1;
+        private System.Windows.Forms.Label label5;
     }
 }
 
