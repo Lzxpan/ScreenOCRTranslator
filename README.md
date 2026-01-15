@@ -1,14 +1,12 @@
-# ScreenOCRTranslator
-使用快速啟動鍵啟動，框選要翻譯的句子，可以將翻譯的結果顯示在框選處。
+# ScreenOCRTranslator<br>
+[![ScreenTranslator使用教學](https://img.youtube.com/vi/OUdjk_U1lEE/0.jpg)](https://www.youtube.com/watch?v=OUdjk_U1lEE)<br>
+這款工具可以用來翻譯遊戲畫面或其他應用程式中的文字，非常方便。<br>
 
 使用說明<br>
-1.設定Gemini API key。<br>
-2.選取目標語系。<br>
-3.選取OCR或AI辨識。<br>
-4.程式縮到最小。<br>
-5.按下Q鍵+滑鼠左鍵啟動畫面框選功能。<br>
-6.框選需要翻譯的句子。<br>
-7.翻譯結果會顯示在框選處。<br>
+取得 API Key：前往 Gemini Studio 並複製 API Key [00:03]。<br>
+設定軟體：將複製的 API Key 貼入 ScreenTranslator 設定中 [00:07]。<br>
+進行翻譯：按下鍵盤 Q 鍵 + 滑鼠左鍵，框選畫面中想要翻譯的區域 [00:13]。<br>
+完成翻譯：AI 會自動識別並將翻譯後的文字覆蓋在原始位置上，且會根據文字大小自動調整 [00:19]。<br>
 
 版本說明<br>
 V0.92b<br>
