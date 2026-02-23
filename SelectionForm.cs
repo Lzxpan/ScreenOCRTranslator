@@ -14,6 +14,7 @@ namespace ScreenOCRTranslator
         private Point startPoint;
         private Rectangle selectedRect;
         private Rectangle selectedRectScreen;    // 螢幕絕對座標（回傳用）
+        private Bitmap backgroundScreenshot;
         private bool isDragging = false;
         public event Action<Bitmap, Rectangle> OnSelectionCompleted;
 
@@ -34,6 +35,12 @@ namespace ScreenOCRTranslator
             this.StartPosition = FormStartPosition.Manual;
             this.WindowState = FormWindowState.Normal;
             this.Bounds = screen.Bounds;
+
+            backgroundScreenshot = new Bitmap(this.Bounds.Width, this.Bounds.Height);
+            using (Graphics g = Graphics.FromImage(backgroundScreenshot))
+            {
+                g.CopyFromScreen(this.Bounds.Location, Point.Empty, this.Bounds.Size);
+            }
         }
 
         protected override void OnMouseDown(MouseEventArgs e)
@@ -94,20 +101,41 @@ namespace ScreenOCRTranslator
 
         protected override void OnPaint(PaintEventArgs e)
         {
+            if (backgroundScreenshot != null)
+            {
+                e.Graphics.DrawImage(backgroundScreenshot, Point.Empty);
+            }
+
+            using (var dimBrush = new SolidBrush(Color.FromArgb(120, Color.Gray)))
+            {
+                e.Graphics.FillRectangle(dimBrush, this.ClientRectangle);
+            }
+
             if (selectedRect != Rectangle.Empty)
             {
+                e.Graphics.SmoothingMode = System.Drawing.Drawing2D.SmoothingMode.AntiAlias;
                 var outerRect = Rectangle.Inflate(selectedRect, 3, 3);
 
-                using (Pen outerPen = new Pen(Color.LightBlue, 2))
+                using (Pen outerPen = new Pen(Color.FromArgb(255, Color.LightBlue), 3f))
                 {
                     e.Graphics.DrawRectangle(outerPen, outerRect);
                 }
 
-                using (Pen pen = new Pen(Color.Red, 2))
+                using (Pen pen = new Pen(Color.FromArgb(255, Color.Red), 2.5f))
                 {
                     e.Graphics.DrawRectangle(pen, selectedRect);
                 }
             }
+        }
+
+        protected override void Dispose(bool disposing)
+        {
+            if (disposing)
+            {
+                backgroundScreenshot?.Dispose();
+            }
+
+            base.Dispose(disposing);
         }
     }
 }
