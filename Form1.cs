@@ -747,7 +747,6 @@ namespace ScreenOCRTranslator
         private async Task HandleCapturedImage(Bitmap captured)
         {
             picturePreview.Image = captured;
-            SetTranslatingCursor(true);
 
             try
             {
@@ -949,10 +948,6 @@ namespace ScreenOCRTranslator
             {
                 _cursorHint.Hide();
             }
-
-            UseWaitCursor = translating;
-            Cursor.Current = translating ? Cursors.WaitCursor : Cursors.Default;
-            lblStatus.Text = translating ? "翻譯中..." : "待命中";
         }
 
         private async Task ShowCursorFailureThenHideAsync()

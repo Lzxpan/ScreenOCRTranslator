@@ -320,7 +320,7 @@
             this.Controls.Add(this.txtApiKey);
             this.Icon = ((System.Drawing.Icon)(resources.GetObject("$this.Icon")));
             this.Name = "Form1";
-            this.Text = "ScreenOCRTranslator V0.93b";
+            this.Text = "ScreenOCRTranslator V0.94b";
             this.FormClosing += new System.Windows.Forms.FormClosingEventHandler(this.Form1_FormClosing);
             this.Load += new System.EventHandler(this.Form1_Load);
             ((System.ComponentModel.ISupportInitialize)(this.numIdleSeconds)).EndInit();
