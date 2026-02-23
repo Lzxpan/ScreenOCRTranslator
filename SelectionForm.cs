@@ -96,6 +96,13 @@ namespace ScreenOCRTranslator
         {
             if (selectedRect != Rectangle.Empty)
             {
+                var outerRect = Rectangle.Inflate(selectedRect, 3, 3);
+
+                using (Pen outerPen = new Pen(Color.LightBlue, 2))
+                {
+                    e.Graphics.DrawRectangle(outerPen, outerRect);
+                }
+
                 using (Pen pen = new Pen(Color.Red, 2))
                 {
                     e.Graphics.DrawRectangle(pen, selectedRect);
