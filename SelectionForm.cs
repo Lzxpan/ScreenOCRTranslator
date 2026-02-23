@@ -24,7 +24,7 @@ namespace ScreenOCRTranslator
         {
             this.DoubleBuffered = true;
             this.FormBorderStyle = FormBorderStyle.None;
-            this.Opacity = 0.25;
+            this.Opacity = 1;
             this.BackColor = Color.Gray;
             this.TopMost = true;
             this.Cursor = Cursors.Cross;

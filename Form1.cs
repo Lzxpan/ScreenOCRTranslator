@@ -31,6 +31,7 @@ namespace ScreenOCRTranslator
         private bool isSelecting = false;
         private Rectangle lastCapturedRegion;
         private TranslationOverlayForm _overlay;
+        private CursorHintForm _cursorHint;
         private NotifyIcon _trayIcon;
         private ContextMenuStrip _trayMenu;
         private bool _allowExit = false;
@@ -89,6 +90,7 @@ namespace ScreenOCRTranslator
             Properties.Settings.Default.OverlaySeconds = (int)numOverlaySeconds.Value;
             Properties.Settings.Default.Save(); // 寫入設定
             globalHook?.Dispose();
+            _cursorHint?.Dispose();
             _trayIcon?.Dispose();
             _trayMenu?.Dispose();
         }
@@ -786,6 +788,7 @@ namespace ScreenOCRTranslator
 
                         try
                         {
+                            ShowCursorHint("翻譯中...", Color.Gold);
                             var gr = await geminiClient.TranslateTextEx(prompt);
 
                             if (!string.IsNullOrWhiteSpace(gr.Error) || gr.HttpStatus != 200)
@@ -799,9 +802,11 @@ namespace ScreenOCRTranslator
                                     txtResult.AppendText($"[建議] 退避等待：{gr.RetryAfterSeconds.Value} 秒後再試（若為日配額，等待秒數不一定有用）。\r\n");
 
                                 lblStatus.Text = $"429/配額：{(gr.IsDailyQuotaExceeded ? "當日上限" : "請稍後再試")}";
+                                await ShowCursorFailureThenHideAsync();
                             }
                             else
                             {
+                                HideCursorHint();
                                 translated = gr.Text;
                                 if (gr.Usage != null)
                                 {
@@ -816,6 +821,7 @@ namespace ScreenOCRTranslator
                             UpdateTokensUi(null);
                             txtResult.AppendText($"\r\n\r\n翻譯失敗: {ex.Message}");
                             translated = "翻譯失敗";
+                            await ShowCursorFailureThenHideAsync();
                         }
                     }
                 }
@@ -848,6 +854,7 @@ namespace ScreenOCRTranslator
 
                             picturePreview.Image = (Bitmap)ds.Image.Clone();
 
+                            ShowCursorHint("翻譯中...", Color.Gold);
                             var gr = await geminiClient.SendImageForOCRAndTranslateEx(ds.Image);
 
                             if (!string.IsNullOrWhiteSpace(gr.Error) || gr.HttpStatus != 200)
@@ -861,9 +868,11 @@ namespace ScreenOCRTranslator
                                     txtResult.AppendText($"[建議] 退避等待：{gr.RetryAfterSeconds.Value} 秒後再試（若為日配額，等待秒數不一定有用）。\r\n");
 
                                 lblStatus.Text = $"429/配額：{(gr.IsDailyQuotaExceeded ? "當日上限" : "請稍後再試")}";
+                                await ShowCursorFailureThenHideAsync();
                             }
                             else
                             {
+                                HideCursorHint();
                                 translated = gr.Text;
 
                                 if (gr.Usage != null)
@@ -887,6 +896,7 @@ namespace ScreenOCRTranslator
                         UpdateTokensUi(null);
                         txtResult.AppendText($"\r\n\r\nAI 圖像翻譯失敗：{ex.Message}");
                         translated = "翻譯失敗";
+                        await ShowCursorFailureThenHideAsync();
                     }
                 }
 
@@ -901,22 +911,55 @@ namespace ScreenOCRTranslator
             }
             finally
             {
-                SetTranslatingCursor(false);
+                HideCursorHint();
             }
         }
 
-        private void SetTranslatingCursor(bool translating)
+        private void ShowCursorHint(string text, Color backColor)
         {
             if (IsDisposed) return;
             if (InvokeRequired)
             {
-                BeginInvoke(new Action(() => SetTranslatingCursor(translating)));
+                BeginInvoke(new Action(() => ShowCursorHint(text, backColor)));
                 return;
+            }
+
+            if (_cursorHint == null || _cursorHint.IsDisposed)
+            {
+                _cursorHint = new CursorHintForm();
+            }
+
+            _cursorHint.UpdateMessage(text, backColor, Cursor.Position);
+            if (!_cursorHint.Visible)
+            {
+                _cursorHint.Show();
+            }
+        }
+
+        private void HideCursorHint()
+        {
+            if (IsDisposed) return;
+            if (InvokeRequired)
+            {
+                BeginInvoke(new Action(HideCursorHint));
+                return;
+            }
+
+            if (_cursorHint != null && !_cursorHint.IsDisposed)
+            {
+                _cursorHint.Hide();
             }
 
             UseWaitCursor = translating;
             Cursor.Current = translating ? Cursors.WaitCursor : Cursors.Default;
             lblStatus.Text = translating ? "翻譯中..." : "待命中";
+        }
+
+        private async Task ShowCursorFailureThenHideAsync()
+        {
+            ShowCursorHint("翻譯失敗", Color.IndianRed);
+            await Task.Delay(2000);
+            HideCursorHint();
         }
 
         private void GlobalHook_KeyDown(object sender, KeyEventArgs e)
@@ -1256,6 +1299,42 @@ namespace ScreenOCRTranslator
                     _closeTimer?.Dispose();
                 }
                 base.Dispose(disposing);
+            }
+        }
+
+        private class CursorHintForm : Form
+        {
+            private readonly Label _label;
+
+            public CursorHintForm()
+            {
+                FormBorderStyle = FormBorderStyle.None;
+                ShowInTaskbar = false;
+                TopMost = true;
+                StartPosition = FormStartPosition.Manual;
+                AutoSize = true;
+                AutoSizeMode = AutoSizeMode.GrowAndShrink;
+                Padding = new Padding(0);
+
+                _label = new Label
+                {
+                    AutoSize = true,
+                    ForeColor = Color.White,
+                    BackColor = Color.IndianRed,
+                    Font = new Font("Microsoft JhengHei", 10f, FontStyle.Bold),
+                    Padding = new Padding(10, 6, 10, 6)
+                };
+
+                Controls.Add(_label);
+            }
+
+            protected override bool ShowWithoutActivation => true;
+
+            public void UpdateMessage(string text, Color backColor, Point cursorPos)
+            {
+                _label.Text = text;
+                _label.BackColor = backColor;
+                Location = new Point(cursorPos.X + 14, cursorPos.Y + 14);
             }
         }
 
