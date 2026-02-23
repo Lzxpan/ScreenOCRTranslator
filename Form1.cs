@@ -31,6 +31,9 @@ namespace ScreenOCRTranslator
         private bool isSelecting = false;
         private Rectangle lastCapturedRegion;
         private TranslationOverlayForm _overlay;
+        private NotifyIcon _trayIcon;
+        private ContextMenuStrip _trayMenu;
+        private bool _allowExit = false;
 
         public Form1()
         {
@@ -66,10 +69,19 @@ namespace ScreenOCRTranslator
             globalHook.MouseUpExt += GlobalHook_MouseUpExt;
             linkLabel1.Links.Clear();
             linkLabel1.Links.Add(0, linkLabel1.Text.Length, "https://aistudio.google.com/api-keys"); // LinkData 存網址
+
+            InitializeTrayIcon();
         }
 
         private void Form1_FormClosing(object sender, FormClosingEventArgs e)
         {
+            if (!_allowExit && e.CloseReason == CloseReason.UserClosing)
+            {
+                e.Cancel = true;
+                HideToTray();
+                return;
+            }
+
             Properties.Settings.Default.ApiKey = txtApiKey.Text.Trim();
             Properties.Settings.Default.ModelName = cmbModel.SelectedItem?.ToString();
             Properties.Settings.Default.TranslationModeIndex = cmbTranslationMode.SelectedIndex;
@@ -77,6 +89,67 @@ namespace ScreenOCRTranslator
             Properties.Settings.Default.OverlaySeconds = (int)numOverlaySeconds.Value;
             Properties.Settings.Default.Save(); // 寫入設定
             globalHook?.Dispose();
+            _trayIcon?.Dispose();
+            _trayMenu?.Dispose();
+        }
+
+        private void InitializeTrayIcon()
+        {
+            _trayMenu = new ContextMenuStrip();
+            _trayMenu.Items.Add("開啟主視窗", null, (s, e) => ShowFromTray());
+            _trayMenu.Items.Add("結束", null, (s, e) => ExitApplication());
+
+            _trayIcon = new NotifyIcon
+            {
+                Text = "ScreenOCRTranslator",
+                Icon = this.Icon,
+                Visible = false,
+                ContextMenuStrip = _trayMenu
+            };
+
+            _trayIcon.DoubleClick += (s, e) => ShowFromTray();
+        }
+
+        private void HideToTray()
+        {
+            ShowInTaskbar = false;
+            Hide();
+
+            if (_trayIcon != null)
+            {
+                _trayIcon.Visible = true;
+                _trayIcon.ShowBalloonTip(1200, "ScreenOCRTranslator", "已縮小到右下角常駐。", ToolTipIcon.Info);
+            }
+        }
+
+        private void ShowFromTray()
+        {
+            Show();
+            WindowState = FormWindowState.Normal;
+            ShowInTaskbar = true;
+            Activate();
+
+            if (_trayIcon != null)
+            {
+                _trayIcon.Visible = false;
+            }
+        }
+
+        private void ExitApplication()
+        {
+            _allowExit = true;
+            _trayIcon.Visible = false;
+            Close();
+        }
+
+        protected override void OnResize(EventArgs e)
+        {
+            base.OnResize(e);
+
+            if (WindowState == FormWindowState.Minimized)
+            {
+                HideToTray();
+            }
         }
 
         private void btnCapture_Click(object sender, EventArgs e)
@@ -672,153 +745,178 @@ namespace ScreenOCRTranslator
         private async Task HandleCapturedImage(Bitmap captured)
         {
             picturePreview.Image = captured;
+            SetTranslatingCursor(true);
 
-            string apiKey = txtApiKey.Text.Trim();
-            string modelName = cmbModel.SelectedItem?.ToString();
-            if (!string.IsNullOrEmpty(apiKey) && !string.IsNullOrEmpty(modelName))
+            try
             {
-                geminiClient = new GeminiClient(apiKey, modelName);
-            }
-            else
-            {
-                MessageBox.Show("請輸入 API Key 並選擇模型");
-                return;
-            }
-
-            string translated = null;
-
-            int selectedMode = cmbTranslationMode.SelectedIndex; // 翻譯模式切換 (ComboBox)
-
-            if (selectedMode == 0) // OCR 模式
-            {
-                txtResult.Text = "辨識中...";
-                string langCode = GetSelectedLanguageCode();
-                var ocr = new TesseractOcrProcessor(langCode, picturePreview);
-                string text = ocr.PerformOCR(captured);
-                txtResult.Text = text;
-
-                if (geminiClient == null)
+                string apiKey = txtApiKey.Text.Trim();
+                string modelName = cmbModel.SelectedItem?.ToString();
+                if (!string.IsNullOrEmpty(apiKey) && !string.IsNullOrEmpty(modelName))
                 {
-                    MessageBox.Show("GeminiClient 未初始化！");
+                    geminiClient = new GeminiClient(apiKey, modelName);
+                }
+                else
+                {
+                    MessageBox.Show("請輸入 API Key 並選擇模型");
                     return;
                 }
 
-                if (!string.IsNullOrWhiteSpace(text))
-                {
-                    txtResult.AppendText("\r\n\r\n翻譯中...\r\n");
+                string translated = null;
 
-                    string prompt = $"請將以下內容翻譯成繁體中文（只輸出翻譯後的中文，不需解釋或開場白）：\n\n{text}";
+                int selectedMode = cmbTranslationMode.SelectedIndex; // 翻譯模式切換 (ComboBox)
+
+                if (selectedMode == 0) // OCR 模式
+                {
+                    txtResult.Text = "辨識中...";
+                    string langCode = GetSelectedLanguageCode();
+                    var ocr = new TesseractOcrProcessor(langCode, picturePreview);
+                    string text = ocr.PerformOCR(captured);
+                    txtResult.Text = text;
+
+                    if (geminiClient == null)
+                    {
+                        MessageBox.Show("GeminiClient 未初始化！");
+                        return;
+                    }
+
+                    if (!string.IsNullOrWhiteSpace(text))
+                    {
+                        txtResult.AppendText("\r\n\r\n翻譯中...\r\n");
+                        string prompt = $"請將以下內容翻譯成繁體中文（只輸出翻譯後的中文，不需解釋或開場白）：\n\n{text}";
+
+                        try
+                        {
+                            var gr = await geminiClient.TranslateTextEx(prompt);
+
+                            if (!string.IsNullOrWhiteSpace(gr.Error) || gr.HttpStatus != 200)
+                            {
+                                txtResult.AppendText($"\r\n\r\n翻譯失敗（HTTP {gr.HttpStatus}）：\r\n{gr.Error}\r\n");
+                                translated = "翻譯失敗";
+
+                                if (gr.IsDailyQuotaExceeded)
+                                    txtResult.AppendText("\r\n[判斷] 免費層「當日請求數」已達上限（常見 20/日）。\r\n");
+                                if (gr.RetryAfterSeconds.HasValue)
+                                    txtResult.AppendText($"[建議] 退避等待：{gr.RetryAfterSeconds.Value} 秒後再試（若為日配額，等待秒數不一定有用）。\r\n");
+
+                                lblStatus.Text = $"429/配額：{(gr.IsDailyQuotaExceeded ? "當日上限" : "請稍後再試")}";
+                            }
+                            else
+                            {
+                                translated = gr.Text;
+                                if (gr.Usage != null)
+                                {
+                                    UpdateTokensUi(gr.Usage);
+                                }
+
+                                txtResult.AppendText($"\r\n\r\n翻譯結果：\r\n{translated}");
+                            }
+                        }
+                        catch (Exception ex)
+                        {
+                            UpdateTokensUi(null);
+                            txtResult.AppendText($"\r\n\r\n翻譯失敗: {ex.Message}");
+                            translated = "翻譯失敗";
+                        }
+                    }
+                }
+                else if (selectedMode == 1) // AI 直接圖像翻譯
+                {
+                    txtResult.Text = "AI 圖像翻譯中...\r\n";
 
                     try
                     {
-                        var gr = await geminiClient.TranslateTextEx(prompt);
+                        DownscaleResult ds = null;
 
-                        if (!string.IsNullOrWhiteSpace(gr.Error) || gr.HttpStatus != 200)
+                        try
                         {
-                            // ✅ 明確顯示 429 / 配額 / retry 秒數
-                            txtResult.AppendText($"\r\n\r\n翻譯失敗（HTTP {gr.HttpStatus}）：\r\n{gr.Error}\r\n");
+                            ds = DownscaleForAi(
+                                captured,
+                                targetLinePx: 16,
+                                minLinePx: 14,
+                                cropToInk: true,
+                                cropPadPx: 6,
+                                maxPixels: 200_000
+                            );
 
-                            if (gr.IsDailyQuotaExceeded)
-                                txtResult.AppendText("\r\n[判斷] 免費層「當日請求數」已達上限（常見 20/日）。\r\n");
-                            if (gr.RetryAfterSeconds.HasValue)
-                                txtResult.AppendText($"[建議] 退避等待：{gr.RetryAfterSeconds.Value} 秒後再試（若為日配額，等待秒數不一定有用）。\r\n");
+                            txtResult.AppendText(
+                                $"[原始框選圖] {ds.SrcW}x{ds.SrcH}px\r\n" +
+                                $"[InkBounds] {ds.InkBounds} lines={ds.LineCount} estLineH={ds.EstLineH:F1}px\r\n" +
+                                $"[裁切] {(ds.Cropped ? "Y" : "N")}  [縮放] scale={ds.Scale:F3}\r\n" +
+                                $"[AI送出圖] {ds.Image.Width}x{ds.Image.Height}px\r\n" +
+                                $"(提示：右邊預覽若為實際大小)\r\n\r\n"
+                            );
 
-                            lblStatus.Text = $"429/配額：{(gr.IsDailyQuotaExceeded ? "當日上限" : "請稍後再試")}";
-                            return;
+                            picturePreview.Image = (Bitmap)ds.Image.Clone();
+
+                            var gr = await geminiClient.SendImageForOCRAndTranslateEx(ds.Image);
+
+                            if (!string.IsNullOrWhiteSpace(gr.Error) || gr.HttpStatus != 200)
+                            {
+                                txtResult.AppendText($"\r\n\r\nAI 圖像翻譯失敗（HTTP {gr.HttpStatus}）：\r\n{gr.Error}\r\n");
+                                translated = "翻譯失敗";
+
+                                if (gr.IsDailyQuotaExceeded)
+                                    txtResult.AppendText("\r\n[判斷] 免費層「當日請求數」已達上限（常見 20/日）。\r\n");
+                                if (gr.RetryAfterSeconds.HasValue)
+                                    txtResult.AppendText($"[建議] 退避等待：{gr.RetryAfterSeconds.Value} 秒後再試（若為日配額，等待秒數不一定有用）。\r\n");
+
+                                lblStatus.Text = $"429/配額：{(gr.IsDailyQuotaExceeded ? "當日上限" : "請稍後再試")}";
+                            }
+                            else
+                            {
+                                translated = gr.Text;
+
+                                if (gr.Usage != null)
+                                {
+                                    UpdateTokensUi(gr.Usage);
+                                }
+                            }
+                        }
+                        finally
+                        {
+                            ds?.Image?.Dispose();
                         }
 
-                        translated = gr.Text;
-
-                        // ✅ 顯示 token
-                        if (gr.Usage != null)
+                        if (!string.IsNullOrWhiteSpace(translated) && translated != "翻譯失敗")
                         {
-                            UpdateTokensUi(gr.Usage);
+                            txtResult.AppendText($"\r\n\r\n翻譯結果：\r\n{translated}");
                         }
-
-                        txtResult.AppendText($"\r\n\r\n翻譯結果：\r\n{translated}");
                     }
                     catch (Exception ex)
                     {
                         UpdateTokensUi(null);
-                        txtResult.AppendText($"\r\n\r\n翻譯失敗: {ex.Message}");
+                        txtResult.AppendText($"\r\n\r\nAI 圖像翻譯失敗：{ex.Message}");
+                        translated = "翻譯失敗";
                     }
                 }
-            }
-            else if (selectedMode == 1) // AI 直接圖像翻譯
-            {
 
-                txtResult.Text = "AI 圖像翻譯中...\r\n";
-
-                try
+                if (!string.IsNullOrWhiteSpace(translated) && !translated.StartsWith("錯誤："))
                 {
-                    DownscaleResult ds = null;
-
-                    try
-                    {
-                        ds = DownscaleForAi(
-                            captured,
-                            targetLinePx: 16,     // ✅ 想「再小一點」就 16~18
-                            minLinePx: 14,        // ✅ 多行小字保護
-                            cropToInk: true,      // ✅ 強烈建議
-                            cropPadPx: 6,
-                            maxPixels: 200_000    // ✅ 想再小就降，例如 200_000
-                        );
-
-                        txtResult.AppendText(
-                            $"[原始框選圖] {ds.SrcW}x{ds.SrcH}px\r\n" +
-                            $"[InkBounds] {ds.InkBounds} lines={ds.LineCount} estLineH={ds.EstLineH:F1}px\r\n" +
-                            $"[裁切] {(ds.Cropped ? "Y" : "N")}  [縮放] scale={ds.Scale:F3}\r\n" +
-                            $"[AI送出圖] {ds.Image.Width}x{ds.Image.Height}px\r\n" +
-                            $"(提示：右邊預覽若為實際大小)\r\n\r\n"
-                        );
-
-                        // debug 預覽
-                        picturePreview.Image = (Bitmap)ds.Image.Clone();
-
-                        var gr = await geminiClient.SendImageForOCRAndTranslateEx(ds.Image);
-
-                        if (!string.IsNullOrWhiteSpace(gr.Error) || gr.HttpStatus != 200)
-                        {
-                            txtResult.AppendText($"\r\n\r\nAI 圖像翻譯失敗（HTTP {gr.HttpStatus}）：\r\n{gr.Error}\r\n");
-
-                            if (gr.IsDailyQuotaExceeded)
-                                txtResult.AppendText("\r\n[判斷] 免費層「當日請求數」已達上限（常見 20/日）。\r\n");
-                            if (gr.RetryAfterSeconds.HasValue)
-                                txtResult.AppendText($"[建議] 退避等待：{gr.RetryAfterSeconds.Value} 秒後再試（若為日配額，等待秒數不一定有用）。\r\n");
-
-                            lblStatus.Text = $"429/配額：{(gr.IsDailyQuotaExceeded ? "當日上限" : "請稍後再試")}";
-                            return;
-                        }
-
-                        translated = gr.Text;
-
-                        if (gr.Usage != null)
-                        {
-                            UpdateTokensUi(gr.Usage);
-                        }
-                    }
-                    finally
-                    {
-                        ds?.Image?.Dispose();
-                    }
-
-                    txtResult.AppendText($"\r\n\r\n翻譯結果：\r\n{translated}");
+                    DrawTranslatedText(translated, lastCapturedRegion);
                 }
-                catch (Exception ex)
+                else if (!string.IsNullOrWhiteSpace(translated))
                 {
-                    UpdateTokensUi(null);
-                    txtResult.AppendText($"\r\n\r\nAI 圖像翻譯失敗：{ex.Message}");
+                    SafeStatus(translated); // 把錯誤留在狀態列
                 }
             }
+            finally
+            {
+                SetTranslatingCursor(false);
+            }
+        }
 
-            if (!string.IsNullOrWhiteSpace(translated) && !translated.StartsWith("錯誤："))
+        private void SetTranslatingCursor(bool translating)
+        {
+            if (IsDisposed) return;
+            if (InvokeRequired)
             {
-                DrawTranslatedText(translated, lastCapturedRegion);
+                BeginInvoke(new Action(() => SetTranslatingCursor(translating)));
+                return;
             }
-            else if (!string.IsNullOrWhiteSpace(translated))
-            {
-                SafeStatus(translated); // 把錯誤留在狀態列
-            }
+
+            UseWaitCursor = translating;
+            Cursor.Current = translating ? Cursors.WaitCursor : Cursors.Default;
+            lblStatus.Text = translating ? "翻譯中..." : "待命中";
         }
 
         private void GlobalHook_KeyDown(object sender, KeyEventArgs e)
@@ -1179,5 +1277,3 @@ namespace ScreenOCRTranslator
         }
     }
 }
-
-
