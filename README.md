@@ -1,8 +1,8 @@
 # ScreenOCRTranslator<br>
 [![ScreenTranslator使用教學](https://img.youtube.com/vi/OUdjk_U1lEE/0.jpg)](https://www.youtube.com/watch?v=OUdjk_U1lEE)<br>
 
-[畫面預覽](images/main.jpg)
-[Tokens用量](images/Tokens.jpg)
+![畫面預覽](images/main.jpg)
+![Tokens用量](images/Tokens.jpg)
 這款工具可以用來翻譯遊戲畫面或其他應用程式中的文字，非常方便。<br>
 
 使用說明<br>
