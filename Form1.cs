@@ -35,6 +35,8 @@ namespace ScreenOCRTranslator
         private NotifyIcon _trayIcon;
         private ContextMenuStrip _trayMenu;
         private bool _allowExit = false;
+        private DailyQuotaTracker _quotaTracker;
+        private QuotaBoardForm _quotaBoard;
 
         public Form1()
         {
@@ -132,6 +134,9 @@ namespace ScreenOCRTranslator
             linkLabel_Llama4.Links.Add(0, linkLabel_Llama4.Text.Length, "https://console.groq.com/keys");
 
             InitializeTrayIcon();
+
+            _quotaTracker = DailyQuotaTracker.LoadOrCreate(Path.Combine(Application.StartupPath, "usage_daily.json"));
+            _quotaTracker.EnsureToday();
         }
 
         private void Form1_FormClosing(object sender, FormClosingEventArgs e)
@@ -174,10 +179,31 @@ namespace ScreenOCRTranslator
             Properties.Settings.Default.LanguageModeIndex = cmbLanguage.SelectedIndex;
             Properties.Settings.Default.OverlaySeconds = (int)numOverlaySeconds.Value;
             Properties.Settings.Default.Save(); // 寫入設定
+            _quotaTracker?.Save();
             globalHook?.Dispose();
             _cursorHint?.Dispose();
             _trayIcon?.Dispose();
             _trayMenu?.Dispose();
+        }
+
+        private void btnQuotaBoard_Click(object sender, EventArgs e)
+        {
+            ShowQuotaBoard();
+        }
+
+        private void ShowQuotaBoard()
+        {
+            _quotaTracker?.EnsureToday();
+            if (_quotaBoard == null || _quotaBoard.IsDisposed)
+            {
+                _quotaBoard = new QuotaBoardForm();
+                _quotaBoard.FormClosed += (s, e) => _quotaBoard = null;
+            }
+
+            var rows = _quotaTracker?.GetSnapshot(BuildLlmCredentials()) ?? new List<DailyQuotaEntry>();
+            _quotaBoard.UpdateRows(rows, DateTime.Now);
+            _quotaBoard.Show();
+            _quotaBoard.BringToFront();
         }
 
         private void InitializeTrayIcon()
@@ -923,9 +949,15 @@ namespace ScreenOCRTranslator
                     }
 
                     if (gr != null && gr.HttpStatus == 200 && string.IsNullOrWhiteSpace(gr.Error))
+                    {
+                        _quotaTracker?.RecordResult(DailyQuotaTracker.MapProvider(c.Provider, c.Model), c.Model, gr.Usage, true, null);
+                        _quotaTracker?.Save();
                         return gr;
+                    }
 
                     last = gr;
+                    _quotaTracker?.RecordResult(DailyQuotaTracker.MapProvider(c.Provider, c.Model), c.Model, gr?.Usage, false, gr?.Error);
+                    _quotaTracker?.Save();
                     bool canSwitch = LlmErrorPolicy.IsQuotaOrRateLimit(gr);
                     if (canSwitch)
                     {
@@ -947,6 +979,8 @@ namespace ScreenOCRTranslator
                 }
                 catch (Exception ex)
                 {
+                    _quotaTracker?.RecordResult(DailyQuotaTracker.MapProvider(c.Provider, c.Model), c.Model, null, false, ex.Message);
+                    _quotaTracker?.Save();
                     last = new GeminiResult
                     {
                         HttpStatus = 0,
@@ -1006,9 +1040,15 @@ namespace ScreenOCRTranslator
                     }
 
                     if (gr != null && gr.HttpStatus == 200 && string.IsNullOrWhiteSpace(gr.Error))
+                    {
+                        _quotaTracker?.RecordResult(DailyQuotaTracker.MapProvider(c.Provider, c.Model), c.Model, gr.Usage, true, null);
+                        _quotaTracker?.Save();
                         return gr;
+                    }
 
                     last = gr;
+                    _quotaTracker?.RecordResult(DailyQuotaTracker.MapProvider(c.Provider, c.Model), c.Model, gr?.Usage, false, gr?.Error);
+                    _quotaTracker?.Save();
                     bool canSwitch = LlmErrorPolicy.IsQuotaOrRateLimit(gr);
                     if (canSwitch)
                     {
@@ -1030,6 +1070,8 @@ namespace ScreenOCRTranslator
                 }
                 catch (Exception ex)
                 {
+                    _quotaTracker?.RecordResult(DailyQuotaTracker.MapProvider(c.Provider, c.Model), c.Model, null, false, ex.Message);
+                    _quotaTracker?.Save();
                     last = new GeminiResult
                     {
                         HttpStatus = 0,
@@ -1623,6 +1665,84 @@ namespace ScreenOCRTranslator
                 _label.Text = text;
                 _label.BackColor = backColor;
                 Location = new Point(cursorPos.X + 14, cursorPos.Y + 14);
+            }
+        }
+
+        private class QuotaBoardForm : Form
+        {
+            private readonly DataGridView _grid;
+            private readonly Label _title;
+            private readonly Button _btnRefresh;
+
+            public QuotaBoardForm()
+            {
+                Text = "今日各引擎使用量";
+                Width = 980;
+                Height = 520;
+                StartPosition = FormStartPosition.CenterParent;
+
+                _title = new Label
+                {
+                    AutoSize = true,
+                    Location = new Point(12, 12),
+                    Text = "今日各引擎使用量"
+                };
+
+                _btnRefresh = new Button
+                {
+                    Text = "重新整理",
+                    Width = 90,
+                    Height = 24,
+                    Location = new Point(860, 8)
+                };
+                _btnRefresh.Click += (s, e) => { /* 由外部按鈕重開即可刷新 */ };
+
+                _grid = new DataGridView
+                {
+                    Location = new Point(12, 40),
+                    Width = 940,
+                    Height = 430,
+                    ReadOnly = true,
+                    AllowUserToAddRows = false,
+                    AllowUserToDeleteRows = false,
+                    AllowUserToResizeRows = false,
+                    RowHeadersVisible = false,
+                    SelectionMode = DataGridViewSelectionMode.FullRowSelect,
+                    AutoSizeColumnsMode = DataGridViewAutoSizeColumnsMode.Fill
+                };
+
+                _grid.Columns.Add("Provider", "引擎");
+                _grid.Columns.Add("Model", "模型");
+                _grid.Columns.Add("UsedSuccessRequests", "已用(成功)");
+                _grid.Columns.Add("UsedFailedRequests", "失敗");
+                _grid.Columns.Add("UsedTotalTokens", "消耗Tokens");
+                _grid.Columns.Add("DailyLimit", "上限");
+                _grid.Columns.Add("RpmLimit", "RPM");
+                _grid.Columns.Add("LastError", "最後錯誤");
+
+                Controls.Add(_title);
+                Controls.Add(_btnRefresh);
+                Controls.Add(_grid);
+            }
+
+            public void UpdateRows(List<DailyQuotaEntry> rows, DateTime now)
+            {
+                _title.Text = $"今日各引擎使用量（{now:yyyy-MM-dd}）";
+                _grid.Rows.Clear();
+
+                foreach (var r in rows)
+                {
+                    _grid.Rows.Add(
+                        r.Provider,
+                        r.Model,
+                        r.UsedSuccessRequests,
+                        r.UsedFailedRequests,
+                        r.UsedTotalTokens,
+                        r.DailyLimit <= 0 ? "-" : r.DailyLimit.ToString(),
+                        r.RpmLimit.HasValue ? r.RpmLimit.Value.ToString() : "-",
+                        string.IsNullOrWhiteSpace(r.LastError) ? "-" : r.LastError
+                    );
+                }
             }
         }
 
