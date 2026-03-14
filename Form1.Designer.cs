@@ -64,6 +64,7 @@
             this.cmbModel_Llama4 = new System.Windows.Forms.ComboBox();
             this.linkLabel_Llama4 = new System.Windows.Forms.LinkLabel();
             this.lblApiKey_Llama4 = new System.Windows.Forms.Label();
+            this.btnQuotaBoard = new System.Windows.Forms.Button();
             ((System.ComponentModel.ISupportInitialize)(this.numIdleSeconds)).BeginInit();
             ((System.ComponentModel.ISupportInitialize)(this.picturePreview)).BeginInit();
             ((System.ComponentModel.ISupportInitialize)(this.numOverlaySeconds)).BeginInit();
@@ -468,11 +469,23 @@
             this.lblApiKey_Llama4.TabIndex = 20;
             this.lblApiKey_Llama4.Text = "Llama 4 API Key：";
             // 
+            // 
+            // btnQuotaBoard
+            // 
+            this.btnQuotaBoard.Location = new System.Drawing.Point(319, 8);
+            this.btnQuotaBoard.Name = "btnQuotaBoard";
+            this.btnQuotaBoard.Size = new System.Drawing.Size(111, 23);
+            this.btnQuotaBoard.TabIndex = 21;
+            this.btnQuotaBoard.Text = "今日引擎使用量";
+            this.btnQuotaBoard.UseVisualStyleBackColor = true;
+            this.btnQuotaBoard.Click += new System.EventHandler(this.btnQuotaBoard_Click);
+            // 
             // Form1
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(6F, 12F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
             this.ClientSize = new System.Drawing.Size(928, 544);
+            this.Controls.Add(this.btnQuotaBoard);
             this.Controls.Add(this.lblApiKey_Llama4);
             this.Controls.Add(this.lblApiKey_MistralPixtral);
             this.Controls.Add(this.lblApiKey_Pixtral);
@@ -558,6 +571,7 @@
         private System.Windows.Forms.ComboBox cmbModel_Llama4;
         private System.Windows.Forms.LinkLabel linkLabel_Llama4;
         private System.Windows.Forms.Label lblApiKey_Llama4;
+        private System.Windows.Forms.Button btnQuotaBoard;
     }
 }
 

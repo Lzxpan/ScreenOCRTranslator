@@ -82,5 +82,77 @@ namespace ScreenOCRTranslator.Properties {
                 this["OverlaySeconds"] = value;
             }
         }
+        
+        [global::System.Configuration.UserScopedSettingAttribute()]
+        [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
+        [global::System.Configuration.DefaultSettingValueAttribute("")]
+        public string ApiKey_Pixtral {
+            get {
+                return ((string)(this["ApiKey_Pixtral"]));
+            }
+            set {
+                this["ApiKey_Pixtral"] = value;
+            }
+        }
+        
+        [global::System.Configuration.UserScopedSettingAttribute()]
+        [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
+        [global::System.Configuration.DefaultSettingValueAttribute("mistralai/Pixtral-12B-2409")]
+        public string ModelName_Pixtral {
+            get {
+                return ((string)(this["ModelName_Pixtral"]));
+            }
+            set {
+                this["ModelName_Pixtral"] = value;
+            }
+        }
+        
+        [global::System.Configuration.UserScopedSettingAttribute()]
+        [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
+        [global::System.Configuration.DefaultSettingValueAttribute("")]
+        public string ApiKey_MistralPixtral {
+            get {
+                return ((string)(this["ApiKey_MistralPixtral"]));
+            }
+            set {
+                this["ApiKey_MistralPixtral"] = value;
+            }
+        }
+        
+        [global::System.Configuration.UserScopedSettingAttribute()]
+        [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
+        [global::System.Configuration.DefaultSettingValueAttribute("pixtral-large-latest")]
+        public string ModelName_MistralPixtral {
+            get {
+                return ((string)(this["ModelName_MistralPixtral"]));
+            }
+            set {
+                this["ModelName_MistralPixtral"] = value;
+            }
+        }
+        
+        [global::System.Configuration.UserScopedSettingAttribute()]
+        [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
+        [global::System.Configuration.DefaultSettingValueAttribute("")]
+        public string ApiKey_Llama4 {
+            get {
+                return ((string)(this["ApiKey_Llama4"]));
+            }
+            set {
+                this["ApiKey_Llama4"] = value;
+            }
+        }
+        
+        [global::System.Configuration.UserScopedSettingAttribute()]
+        [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
+        [global::System.Configuration.DefaultSettingValueAttribute("meta-llama/llama-4-scout-17b-16e-instruct")]
+        public string ModelName_Llama4 {
+            get {
+                return ((string)(this["ModelName_Llama4"]));
+            }
+            set {
+                this["ModelName_Llama4"] = value;
+            }
+        }
     }
 }
