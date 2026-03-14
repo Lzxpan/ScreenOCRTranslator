@@ -46,6 +46,29 @@ namespace ScreenOCRTranslator
             cmbModel.SelectedIndex = 0;
             cmbLanguage.SelectedIndex = 3;
             cmbTranslationMode.SelectedIndex = 1; // 預設 OCR 模式
+            cmbModel_Pixtral.Items.Clear();
+            cmbModel_Pixtral.Items.AddRange(new object[]
+            {
+                "mistralai/Pixtral-12B-2409"
+            });
+
+            cmbModel_MistralPixtral.Items.Clear();
+            cmbModel_MistralPixtral.Items.AddRange(new object[]
+            {
+                "pixtral-large-latest",
+                "pixtral-large-2411"
+            });
+
+            cmbModel_Llama4.Items.Clear();
+            cmbModel_Llama4.Items.AddRange(new object[]
+            {
+                "meta-llama/llama-4-scout-17b-16e-instruct"
+            });
+
+            cmbModel_Pixtral.SelectedIndex = 0;
+            cmbModel_MistralPixtral.SelectedIndex = 0;
+            cmbModel_Llama4.SelectedIndex = 0;
+
             // 載入儲存的 API Key 和模型
             txtApiKey.Text = Properties.Settings.Default.ApiKey;
             string savedModel = Properties.Settings.Default.ModelName;           
@@ -55,6 +78,34 @@ namespace ScreenOCRTranslator
                 if (index >= 0)
                     cmbModel.SelectedIndex = index;
             }
+
+            txtApiKey_Pixtral.Text = Properties.Settings.Default.ApiKey_Pixtral;
+            string savedPixtralModel = Properties.Settings.Default.ModelName_Pixtral;
+            if (!string.IsNullOrEmpty(savedPixtralModel))
+            {
+                int index = cmbModel_Pixtral.Items.IndexOf(savedPixtralModel);
+                if (index >= 0)
+                    cmbModel_Pixtral.SelectedIndex = index;
+            }
+
+            txtApiKey_MistralPixtral.Text = Properties.Settings.Default.ApiKey_MistralPixtral;
+            string savedMistralPixtralModel = Properties.Settings.Default.ModelName_MistralPixtral;
+            if (!string.IsNullOrEmpty(savedMistralPixtralModel))
+            {
+                int index = cmbModel_MistralPixtral.Items.IndexOf(savedMistralPixtralModel);
+                if (index >= 0)
+                    cmbModel_MistralPixtral.SelectedIndex = index;
+            }
+
+            txtApiKey_Llama4.Text = Properties.Settings.Default.ApiKey_Llama4;
+            string savedLlama4Model = Properties.Settings.Default.ModelName_Llama4;
+            if (!string.IsNullOrEmpty(savedLlama4Model))
+            {
+                int index = cmbModel_Llama4.Items.IndexOf(savedLlama4Model);
+                if (index >= 0)
+                    cmbModel_Llama4.SelectedIndex = index;
+            }
+
             cmbTranslationMode.SelectedIndex = Properties.Settings.Default.TranslationModeIndex;
             cmbLanguage.SelectedIndex = Properties.Settings.Default.LanguageModeIndex;
             numOverlaySeconds.Value = Math.Max(numOverlaySeconds.Minimum,
@@ -70,6 +121,15 @@ namespace ScreenOCRTranslator
             globalHook.MouseUpExt += GlobalHook_MouseUpExt;
             linkLabel1.Links.Clear();
             linkLabel1.Links.Add(0, linkLabel1.Text.Length, "https://aistudio.google.com/api-keys"); // LinkData 存網址
+            linkLabel_Pixtral.Text = "前往查看Pixtral-12B-2409 (vLLM路線)";
+            linkLabel_Pixtral.Links.Clear();
+            linkLabel_Pixtral.Links.Add(0, linkLabel_Pixtral.Text.Length, "https://huggingface.co/mistralai/Pixtral-12B-2409");
+            linkLabel_MistralPixtral.Text = "前往取得Mistral API key";
+            linkLabel_MistralPixtral.Links.Clear();
+            linkLabel_MistralPixtral.Links.Add(0, linkLabel_MistralPixtral.Text.Length, "https://console.mistral.ai/api-keys/");
+            linkLabel_Llama4.Text = "前往取得Groq API key";
+            linkLabel_Llama4.Links.Clear();
+            linkLabel_Llama4.Links.Add(0, linkLabel_Llama4.Text.Length, "https://console.groq.com/keys");
 
             InitializeTrayIcon();
         }
@@ -78,13 +138,38 @@ namespace ScreenOCRTranslator
         {
             if (!_allowExit && e.CloseReason == CloseReason.UserClosing)
             {
-                e.Cancel = true;
-                HideToTray();
-                return;
+                var choice = MessageBox.Show(
+                    "請選擇：\n是(Y)：關閉程式\n否(N)：縮小到右下角常駐\n取消：維持目前視窗",
+                    "關閉選項",
+                    MessageBoxButtons.YesNoCancel,
+                    MessageBoxIcon.Question,
+                    MessageBoxDefaultButton.Button2);
+
+                if (choice == DialogResult.Yes)
+                {
+                    _allowExit = true;
+                }
+                else if (choice == DialogResult.No)
+                {
+                    e.Cancel = true;
+                    HideToTray();
+                    return;
+                }
+                else
+                {
+                    e.Cancel = true;
+                    return;
+                }
             }
 
             Properties.Settings.Default.ApiKey = txtApiKey.Text.Trim();
             Properties.Settings.Default.ModelName = cmbModel.SelectedItem?.ToString();
+            Properties.Settings.Default.ApiKey_Pixtral = txtApiKey_Pixtral.Text.Trim();
+            Properties.Settings.Default.ModelName_Pixtral = cmbModel_Pixtral.SelectedItem?.ToString();
+            Properties.Settings.Default.ApiKey_MistralPixtral = txtApiKey_MistralPixtral.Text.Trim();
+            Properties.Settings.Default.ModelName_MistralPixtral = cmbModel_MistralPixtral.SelectedItem?.ToString();
+            Properties.Settings.Default.ApiKey_Llama4 = txtApiKey_Llama4.Text.Trim();
+            Properties.Settings.Default.ModelName_Llama4 = cmbModel_Llama4.SelectedItem?.ToString();
             Properties.Settings.Default.TranslationModeIndex = cmbTranslationMode.SelectedIndex;
             Properties.Settings.Default.LanguageModeIndex = cmbLanguage.SelectedIndex;
             Properties.Settings.Default.OverlaySeconds = (int)numOverlaySeconds.Value;
@@ -744,24 +829,238 @@ namespace ScreenOCRTranslator
 
         private static int Luma(Color c) => (c.R * 299 + c.G * 587 + c.B * 114) / 1000;
 
+        private List<LlmCredential> BuildLlmCredentials()
+        {
+            var list = new List<LlmCredential>();
+
+            // 1) Gemini
+            if (!string.IsNullOrWhiteSpace(txtApiKey.Text) && cmbModel.SelectedItem != null)
+            {
+                list.Add(new LlmCredential
+                {
+                    Provider = LlmProvider.Gemini,
+                    ApiKey = txtApiKey.Text.Trim(),
+                    Model = cmbModel.SelectedItem.ToString(),
+                    BaseUrl = "",
+                    DisplayName = "Gemini"
+                });
+            }
+
+            // 2) Pixtral-12B-2409（進階路線 A：本地 vLLM）
+            //    預設 base URL 為 http://127.0.0.1:8000/v1
+            if (cmbModel_Pixtral.SelectedItem != null)
+            {
+                list.Add(new LlmCredential
+                {
+                    Provider = LlmProvider.Pixtral12BLocalVllm,
+                    ApiKey = txtApiKey_Pixtral.Text.Trim(), // vLLM token，可留空
+                    Model = cmbModel_Pixtral.SelectedItem.ToString(),
+                    BaseUrl = "http://127.0.0.1:8000/v1",
+                    DisplayName = "Pixtral-12B-2409(vLLM)"
+                });
+            }
+
+            // 3) Mistral Pixtral Large
+            if (!string.IsNullOrWhiteSpace(txtApiKey_MistralPixtral.Text) && cmbModel_MistralPixtral.SelectedItem != null)
+            {
+                list.Add(new LlmCredential
+                {
+                    Provider = LlmProvider.MistralPixtral,
+                    ApiKey = txtApiKey_MistralPixtral.Text.Trim(),
+                    Model = cmbModel_MistralPixtral.SelectedItem.ToString(),
+                    BaseUrl = "https://api.mistral.ai/v1",
+                    DisplayName = "Mistral Pixtral"
+                });
+            }
+
+            // 4) Groq Llama4
+            if (!string.IsNullOrWhiteSpace(txtApiKey_Llama4.Text) && cmbModel_Llama4.SelectedItem != null)
+            {
+                list.Add(new LlmCredential
+                {
+                    Provider = LlmProvider.GroqLlama4,
+                    ApiKey = txtApiKey_Llama4.Text.Trim(),
+                    Model = cmbModel_Llama4.SelectedItem.ToString(),
+                    BaseUrl = "https://api.groq.com/openai/v1",
+                    DisplayName = "Groq Llama4"
+                });
+            }
+
+            return list;
+        }
+
+        private async Task<GeminiResult> TranslateTextWithFallbackAsync(string prompt)
+        {
+            var credentials = BuildLlmCredentials();
+            if (credentials.Count == 0)
+            {
+                return new GeminiResult
+                {
+                    HttpStatus = 0,
+                    Error = "請至少填入一組可用的 API Key 與模型",
+                    Text = "錯誤：請至少填入一組可用的 API Key 與模型"
+                };
+            }
+
+            GeminiResult last = null;
+            for (int i = 0; i < credentials.Count; i++)
+            {
+                var c = credentials[i];
+                txtResult.AppendText($"\r\n[嘗試] {c.DisplayName} / {c.Model}\r\n");
+
+                try
+                {
+                    GeminiResult gr;
+                    if (c.Provider == LlmProvider.Gemini)
+                    {
+                        var client = new GeminiClient(c.ApiKey, c.Model);
+                        gr = await client.TranslateTextEx(prompt);
+                    }
+                    else
+                    {
+                        var client = new OpenAiCompatibleClient(c.BaseUrl, c.ApiKey, c.Model, c.DisplayName);
+                        gr = await client.TranslateTextEx(prompt);
+                    }
+
+                    if (gr != null && gr.HttpStatus == 200 && string.IsNullOrWhiteSpace(gr.Error))
+                        return gr;
+
+                    last = gr;
+                    bool canSwitch = LlmErrorPolicy.IsQuotaOrRateLimit(gr);
+                    if (canSwitch)
+                    {
+                        if (i < credentials.Count - 1)
+                        {
+                            txtResult.AppendText($"[切換] {c.DisplayName} 配額或速率受限，改用下一組 API Key。\r\n");
+                            continue;
+                        }
+
+                        return new GeminiResult
+                        {
+                            HttpStatus = 429,
+                            Error = "所有API KEY額度已用盡",
+                            Text = "錯誤：所有API KEY額度已用盡"
+                        };
+                    }
+
+                    return gr;
+                }
+                catch (Exception ex)
+                {
+                    last = new GeminiResult
+                    {
+                        HttpStatus = 0,
+                        Error = ex.Message,
+                        Text = "錯誤：" + ex.Message
+                    };
+
+                    if (LlmErrorPolicy.IsRetryableNetworkError(ex) && i < credentials.Count - 1)
+                    {
+                        txtResult.AppendText($"[切換] {c.DisplayName} 網路或連線失敗，改用下一組 API Key。\r\n");
+                        continue;
+                    }
+
+                    return last;
+                }
+            }
+
+            return last ?? new GeminiResult
+            {
+                HttpStatus = 429,
+                Error = "所有API KEY額度已用盡",
+                Text = "錯誤：所有API KEY額度已用盡"
+            };
+        }
+
+        private async Task<GeminiResult> TranslateImageWithFallbackAsync(Bitmap image)
+        {
+            var credentials = BuildLlmCredentials();
+            if (credentials.Count == 0)
+            {
+                return new GeminiResult
+                {
+                    HttpStatus = 0,
+                    Error = "請至少填入一組可用的 API Key 與模型",
+                    Text = "錯誤：請至少填入一組可用的 API Key 與模型"
+                };
+            }
+
+            GeminiResult last = null;
+            for (int i = 0; i < credentials.Count; i++)
+            {
+                var c = credentials[i];
+                txtResult.AppendText($"\r\n[嘗試] {c.DisplayName} / {c.Model}\r\n");
+
+                try
+                {
+                    GeminiResult gr;
+                    if (c.Provider == LlmProvider.Gemini)
+                    {
+                        var client = new GeminiClient(c.ApiKey, c.Model);
+                        gr = await client.SendImageForOCRAndTranslateEx(image);
+                    }
+                    else
+                    {
+                        var client = new OpenAiCompatibleClient(c.BaseUrl, c.ApiKey, c.Model, c.DisplayName);
+                        gr = await client.SendImageForOCRAndTranslateEx(image);
+                    }
+
+                    if (gr != null && gr.HttpStatus == 200 && string.IsNullOrWhiteSpace(gr.Error))
+                        return gr;
+
+                    last = gr;
+                    bool canSwitch = LlmErrorPolicy.IsQuotaOrRateLimit(gr);
+                    if (canSwitch)
+                    {
+                        if (i < credentials.Count - 1)
+                        {
+                            txtResult.AppendText($"[切換] {c.DisplayName} 配額或速率受限，改用下一組 API Key。\r\n");
+                            continue;
+                        }
+
+                        return new GeminiResult
+                        {
+                            HttpStatus = 429,
+                            Error = "所有API KEY額度已用盡",
+                            Text = "錯誤：所有API KEY額度已用盡"
+                        };
+                    }
+
+                    return gr;
+                }
+                catch (Exception ex)
+                {
+                    last = new GeminiResult
+                    {
+                        HttpStatus = 0,
+                        Error = ex.Message,
+                        Text = "錯誤：" + ex.Message
+                    };
+
+                    if (LlmErrorPolicy.IsRetryableNetworkError(ex) && i < credentials.Count - 1)
+                    {
+                        txtResult.AppendText($"[切換] {c.DisplayName} 網路或連線失敗，改用下一組 API Key。\r\n");
+                        continue;
+                    }
+
+                    return last;
+                }
+            }
+
+            return last ?? new GeminiResult
+            {
+                HttpStatus = 429,
+                Error = "所有API KEY額度已用盡",
+                Text = "錯誤：所有API KEY額度已用盡"
+            };
+        }
+
         private async Task HandleCapturedImage(Bitmap captured)
         {
             picturePreview.Image = captured;
 
             try
             {
-                string apiKey = txtApiKey.Text.Trim();
-                string modelName = cmbModel.SelectedItem?.ToString();
-                if (!string.IsNullOrEmpty(apiKey) && !string.IsNullOrEmpty(modelName))
-                {
-                    geminiClient = new GeminiClient(apiKey, modelName);
-                }
-                else
-                {
-                    MessageBox.Show("請輸入 API Key 並選擇模型");
-                    return;
-                }
-
                 string translated = null;
 
                 int selectedMode = cmbTranslationMode.SelectedIndex; // 翻譯模式切換 (ComboBox)
@@ -774,12 +1073,6 @@ namespace ScreenOCRTranslator
                     string text = ocr.PerformOCR(captured);
                     txtResult.Text = text;
 
-                    if (geminiClient == null)
-                    {
-                        MessageBox.Show("GeminiClient 未初始化！");
-                        return;
-                    }
-
                     if (!string.IsNullOrWhiteSpace(text))
                     {
                         txtResult.AppendText("\r\n\r\n翻譯中...\r\n");
@@ -788,7 +1081,7 @@ namespace ScreenOCRTranslator
                         try
                         {
                             ShowCursorHint("翻譯中...", Color.Gold);
-                            var gr = await geminiClient.TranslateTextEx(prompt);
+                            var gr = await TranslateTextWithFallbackAsync(prompt);
 
                             if (!string.IsNullOrWhiteSpace(gr.Error) || gr.HttpStatus != 200)
                             {
@@ -854,7 +1147,7 @@ namespace ScreenOCRTranslator
                             picturePreview.Image = (Bitmap)ds.Image.Clone();
 
                             ShowCursorHint("翻譯中...", Color.Gold);
-                            var gr = await geminiClient.SendImageForOCRAndTranslateEx(ds.Image);
+                            var gr = await TranslateImageWithFallbackAsync(ds.Image);
 
                             if (!string.IsNullOrWhiteSpace(gr.Error) || gr.HttpStatus != 200)
                             {
