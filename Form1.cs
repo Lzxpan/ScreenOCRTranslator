@@ -7,6 +7,7 @@ using System.Data;
 using System.Drawing;
 using System.Drawing.Drawing2D;
 using System.Drawing.Imaging;
+using System.IO;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
@@ -14,7 +15,6 @@ using System.Web;
 using System.Windows.Forms;
 using Tesseract;
 using static GeminiClient;
-using static System.Net.Mime.MediaTypeNames;
 
 namespace ScreenOCRTranslator
 {
