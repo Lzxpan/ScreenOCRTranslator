@@ -1,14 +1,29 @@
 # ScreenOCRTranslator<br>
 [![ScreenTranslator使用教學](https://img.youtube.com/vi/OUdjk_U1lEE/0.jpg)](https://www.youtube.com/watch?v=OUdjk_U1lEE)<br>
+
+[畫面預覽](images/main.jpg)
+[Tokens用量](images/Tokens.jpg)
 這款工具可以用來翻譯遊戲畫面或其他應用程式中的文字，非常方便。<br>
 
 使用說明<br>
-取得 API Key：前往 Gemini Studio 並複製 API Key [00:03]。<br>
-設定軟體：將複製的 API Key 貼入 ScreenTranslator 設定中 [00:07]。<br>
-進行翻譯：按下鍵盤 Q 鍵 + 滑鼠左鍵，框選畫面中想要翻譯的區域 [00:13]。<br>
-完成翻譯：AI 會自動識別並將翻譯後的文字覆蓋在原始位置上，且會根據文字大小自動調整 [00:19]。<br>
 
+取得 API Key：可依你要用的引擎分別申請（Gemini / Mistral / Groq；Pixtral-12B-2409 採 vLLM 路線）。<br>
+設定軟體：將對應 API Key 貼入各自欄位，並選擇模型。<br>
+進行翻譯：按下鍵盤 Q 鍵 + 滑鼠左鍵，框選畫面中想要翻譯的區域。<br>
+完成翻譯：系統會自動辨識並翻譯為繁體中文，並將翻譯後文字覆蓋在原始位置上。<br>
+配額與用量：可點「今日引擎使用量」查看當日各模型的成功次數、失敗次數、消耗 Tokens、上限與 RPM。<br>
 版本說明<br>
+V0.95b<br>
+
+新增多引擎自動切換機制：Gemini → Pixtral-12B-2409(vLLM) → Mistral Pixtral → Groq Llama4。<br>
+當遇到配額或速率限制（例如 429）時，會自動切換到下一組可用 API Key。<br>
+全部引擎都無法使用時，會顯示「所有API KEY額度已用盡」。<br>
+新增 Pixtral / Mistral Pixtral / Llama4 的 API Key 與模型欄位，並可分別儲存。<br>
+新增各 API key 申請連結（Gemini、Mistral、Groq）與 Pixtral-12B-2409 路線說明連結。<br>
+新增關閉視窗提示：可選擇「關閉程式」、「縮小到右下角常駐」或「取消」。<br>
+新增「今日引擎使用量」面板：顯示每個引擎/模型的成功請求、失敗計數、Tokens 用量、上限與 RPM，並每日自動更新。<br>
+配額統計改為「成功請求為主、失敗另列計數」，便於判讀實際消耗。<br>
+
 V0.94b<br>
 1.送出 AI 翻譯請求時，會在滑鼠游標旁顯示「翻譯中...」。<br>
 2.翻譯失敗時，會在滑鼠游標旁顯示「翻譯失敗」，2 秒後自動恢復。<br>
