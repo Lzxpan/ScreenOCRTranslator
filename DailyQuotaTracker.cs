@@ -43,8 +43,6 @@ namespace ScreenOCRTranslator
 
                 ["groq|meta-llama/llama-4-scout-17b-16e-instruct"] = (1000, 30),
 
-                ["mistral|pixtral-12b-2409"] = (500, 30),
-                ["mistral|mistralai/pixtral-12b-2409"] = (500, 30),
                 ["mistral|mistral-large-2512"] = (200, 10)
             };
 
@@ -155,7 +153,6 @@ namespace ScreenOCRTranslator
                 EnsureEntry("gemini", "gemini-3-flash-preview");
                 EnsureEntry("gemini", "gemini-3.1-flash-lite");
                 EnsureEntry("groq", "meta-llama/llama-4-scout-17b-16e-instruct");
-                EnsureEntry("mistral", "pixtral-12b-2409");
                 EnsureEntry("mistral", "mistral-large-2512");
 
                 return _store.Entries
