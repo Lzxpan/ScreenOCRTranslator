@@ -9,7 +9,7 @@
 
 取得 API Key：可依你要用的引擎分別申請（Gemini / Mistral / Groq）。<br>
 設定軟體：將對應 API Key 貼入各自欄位，並選擇模型；Gemini 預設為 gemini-3.1-flash-lite，Mistral Vision 預設為 mistral-large-2512。<br>
-API Key 申請教學：請看 [API_KEY_GUIDE.md](API_KEY_GUIDE.md)，內含 Gemini、Mistral Vision、Groq Llama4 的登入頁、登入後 API Keys 頁面截圖與 API key 塗黑提醒。<br>
+API Key 申請教學：請看 [API_KEY_GUIDE.md](API_KEY_GUIDE.md)，內含 Gemini、Mistral Vision、Groq Llama4 的登入頁說明、登入後 API Keys 頁面截圖與 API key 塗黑提醒。<br>
 進行翻譯：可在主畫面設定啟動鍵盤鍵與滑鼠鍵，預設為 q 鍵 + 滑鼠左鍵，按住兩鍵後框選畫面中想要翻譯的區域。<br>
 完成翻譯：系統會自動辨識並翻譯為繁體中文，並將翻譯後文字覆蓋在原始位置上。<br>
 配額與用量：可點「今日引擎使用量」查看當日各模型的成功次數、失敗次數、消耗 Tokens、上限與 RPM。<br>
@@ -34,7 +34,7 @@ OCR 語言資料改為內嵌資源，單檔執行時會自動解壓到 `%LOCALAP
 新增「今日引擎使用量」面板：顯示每個引擎/模型的成功請求、失敗計數、Tokens 用量、上限與 RPM，並每日自動更新。<br>
 配額統計改為「成功請求為主、失敗另列計數」，便於判讀實際消耗。<br>
 更新新版主畫面與 Tokens 用量截圖，並移除 Tokens 面板中的舊 Pixtral 佔位列。<br>
-新增 `API_KEY_GUIDE.md`，提供 Gemini、Mistral Vision、Groq Llama4 的登入頁面、登入後 API Keys 頁面截圖教學與獨立塗黑範例。<br>
+新增 `API_KEY_GUIDE.md`，提供 Gemini、Mistral Vision、Groq Llama4 的登入頁面文字說明、登入後 API Keys 頁面截圖教學與獨立塗黑範例。<br>
 
 V0.94b<br>
 1.送出 AI 翻譯請求時，會在滑鼠游標旁顯示「翻譯中...」。<br>
