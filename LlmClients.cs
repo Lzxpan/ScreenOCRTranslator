@@ -15,7 +15,6 @@ namespace ScreenOCRTranslator
     public enum LlmProvider
     {
         Gemini,
-        Pixtral12BLocalVllm,
         MistralPixtral,
         GroqLlama4
     }
@@ -31,6 +30,23 @@ namespace ScreenOCRTranslator
 
     public static class LlmErrorPolicy
     {
+        public static bool ShouldSwitchProvider(GeminiResult r)
+        {
+            if (r == null) return false;
+            if (r.HttpStatus == 0) return true;
+            if (r.HttpStatus == 408 || r.HttpStatus == 429) return true;
+            if (r.HttpStatus >= 500 && r.HttpStatus <= 599) return true;
+            if (r.HttpStatus == 400 || r.HttpStatus == 401 || r.HttpStatus == 403 || r.HttpStatus == 404) return true;
+            if (IsQuotaOrRateLimit(r)) return true;
+
+            string text = (r.Error ?? "") + " " + (r.Text ?? "");
+            if (string.IsNullOrWhiteSpace(text)) return false;
+
+            return Regex.IsMatch(text,
+                "model.*not.*found|not.*found|unsupported|unauthorized|forbidden|permission|api.?key|invalid.?key|service unavailable|temporarily unavailable|server error",
+                RegexOptions.IgnoreCase);
+        }
+
         public static bool IsQuotaOrRateLimit(GeminiResult r)
         {
             if (r == null) return false;

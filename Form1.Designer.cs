@@ -49,11 +49,6 @@
             this.lblTokens = new System.Windows.Forms.Label();
             this.linkLabel1 = new System.Windows.Forms.LinkLabel();
             this.label5 = new System.Windows.Forms.Label();
-            this.lblApiKey_Pixtral = new System.Windows.Forms.Label();
-            this.txtApiKey_Pixtral = new System.Windows.Forms.TextBox();
-            this.label6 = new System.Windows.Forms.Label();
-            this.cmbModel_Pixtral = new System.Windows.Forms.ComboBox();
-            this.linkLabel_Pixtral = new System.Windows.Forms.LinkLabel();
             this.txtApiKey_MistralPixtral = new System.Windows.Forms.TextBox();
             this.label7 = new System.Windows.Forms.Label();
             this.cmbModel_MistralPixtral = new System.Windows.Forms.ComboBox();
@@ -65,6 +60,10 @@
             this.linkLabel_Llama4 = new System.Windows.Forms.LinkLabel();
             this.lblApiKey_Llama4 = new System.Windows.Forms.Label();
             this.btnQuotaBoard = new System.Windows.Forms.Button();
+            this.lblActivationKeyboardKey = new System.Windows.Forms.Label();
+            this.cmbActivationKeyboardKey = new System.Windows.Forms.ComboBox();
+            this.lblActivationMouseButton = new System.Windows.Forms.Label();
+            this.cmbActivationMouseButton = new System.Windows.Forms.ComboBox();
             ((System.ComponentModel.ISupportInitialize)(this.numIdleSeconds)).BeginInit();
             ((System.ComponentModel.ISupportInitialize)(this.picturePreview)).BeginInit();
             ((System.ComponentModel.ISupportInitialize)(this.numOverlaySeconds)).BeginInit();
@@ -100,9 +99,8 @@
             // 
             this.cmbModel.FormattingEnabled = true;
             this.cmbModel.Items.AddRange(new object[] {
-            "gemini-3.1-flash-lite-preview",
+            "gemini-3.1-flash-lite",
             "gemini-3-flash-preview",
-            "gemini-3-pro-preview",
             "gemini-2.5-flash-lite",
             "gemini-2.5-flash",
             "gemini-2.5-pro"});
@@ -242,11 +240,11 @@
             // label3
             // 
             this.label3.AutoSize = true;
-            this.label3.Location = new System.Drawing.Point(8, 70);
+            this.label3.Location = new System.Drawing.Point(405, 70);
             this.label3.Name = "label3";
             this.label3.Size = new System.Drawing.Size(211, 12);
             this.label3.TabIndex = 14;
-            this.label3.Text = "按著Q+滑鼠左鍵，即可啟動框選擷取。";
+            this.label3.Text = "按著設定鍵，即可啟動框選擷取。";
             // 
             // label4
             // 
@@ -310,71 +308,18 @@
             this.label5.TabIndex = 19;
             this.label5.Text = "文在文字顯示區域按下滑鼠右鍵可立即關閉顯示文字";
             // 
-            // lblApiKey_Pixtral
-            // 
-            this.lblApiKey_Pixtral.AutoSize = true;
-            this.lblApiKey_Pixtral.Location = new System.Drawing.Point(34, 180);
-            this.lblApiKey_Pixtral.Name = "lblApiKey_Pixtral";
-            this.lblApiKey_Pixtral.Size = new System.Drawing.Size(90, 12);
-            this.lblApiKey_Pixtral.TabIndex = 20;
-            this.lblApiKey_Pixtral.Text = "Pixtral API Key：";
-            // 
-            // txtApiKey_Pixtral
-            // 
-            this.txtApiKey_Pixtral.Location = new System.Drawing.Point(130, 174);
-            this.txtApiKey_Pixtral.Name = "txtApiKey_Pixtral";
-            this.txtApiKey_Pixtral.Size = new System.Drawing.Size(216, 22);
-            this.txtApiKey_Pixtral.TabIndex = 9;
-            this.txtApiKey_Pixtral.TabStop = false;
-            // 
-            // label6
-            // 
-            this.label6.AutoSize = true;
-            this.label6.Location = new System.Drawing.Point(352, 180);
-            this.label6.Name = "label6";
-            this.label6.Size = new System.Drawing.Size(41, 12);
-            this.label6.TabIndex = 2;
-            this.label6.Text = "模型：";
-            // 
-            // cmbModel_Pixtral
-            // 
-            this.cmbModel_Pixtral.FormattingEnabled = true;
-            this.cmbModel_Pixtral.Items.AddRange(new object[] {
-            "gemini-2.5-flash-lite",
-            "gemini-2.5-flash",
-            "gemini-2.5-pro",
-            "gemini-3-flash-preview",
-            "gemini-3-pro-preview"});
-            this.cmbModel_Pixtral.Location = new System.Drawing.Point(399, 177);
-            this.cmbModel_Pixtral.Name = "cmbModel_Pixtral";
-            this.cmbModel_Pixtral.Size = new System.Drawing.Size(143, 20);
-            this.cmbModel_Pixtral.TabIndex = 3;
-            // 
-            // linkLabel_Pixtral
-            // 
-            this.linkLabel_Pixtral.AutoSize = true;
-            this.linkLabel_Pixtral.Font = new System.Drawing.Font("新細明體", 12F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(136)));
-            this.linkLabel_Pixtral.Location = new System.Drawing.Point(548, 177);
-            this.linkLabel_Pixtral.Name = "linkLabel_Pixtral";
-            this.linkLabel_Pixtral.Size = new System.Drawing.Size(166, 16);
-            this.linkLabel_Pixtral.TabIndex = 18;
-            this.linkLabel_Pixtral.TabStop = true;
-            this.linkLabel_Pixtral.Tag = "";
-            this.linkLabel_Pixtral.Text = "前往取得Pixtral API key";
-            this.linkLabel_Pixtral.LinkClicked += new System.Windows.Forms.LinkLabelLinkClickedEventHandler(this.linkLabel1_LinkClicked);
-            // 
             // txtApiKey_MistralPixtral
-            // 
-            this.txtApiKey_MistralPixtral.Location = new System.Drawing.Point(130, 202);
+            //
+            this.txtApiKey_MistralPixtral.Location = new System.Drawing.Point(130, 174);
             this.txtApiKey_MistralPixtral.Name = "txtApiKey_MistralPixtral";
             this.txtApiKey_MistralPixtral.Size = new System.Drawing.Size(216, 22);
             this.txtApiKey_MistralPixtral.TabIndex = 9;
             this.txtApiKey_MistralPixtral.TabStop = false;
             // 
             // label7
-            // 
+            //
             this.label7.AutoSize = true;
-            this.label7.Location = new System.Drawing.Point(352, 208);
+            this.label7.Location = new System.Drawing.Point(352, 180);
             this.label7.Name = "label7";
             this.label7.Size = new System.Drawing.Size(41, 12);
             this.label7.TabIndex = 2;
@@ -384,12 +329,8 @@
             // 
             this.cmbModel_MistralPixtral.FormattingEnabled = true;
             this.cmbModel_MistralPixtral.Items.AddRange(new object[] {
-            "gemini-2.5-flash-lite",
-            "gemini-2.5-flash",
-            "gemini-2.5-pro",
-            "gemini-3-flash-preview",
-            "gemini-3-pro-preview"});
-            this.cmbModel_MistralPixtral.Location = new System.Drawing.Point(399, 205);
+            "mistral-large-2512"});
+            this.cmbModel_MistralPixtral.Location = new System.Drawing.Point(399, 177);
             this.cmbModel_MistralPixtral.Name = "cmbModel_MistralPixtral";
             this.cmbModel_MistralPixtral.Size = new System.Drawing.Size(143, 20);
             this.cmbModel_MistralPixtral.TabIndex = 3;
@@ -398,36 +339,36 @@
             // 
             this.linkLabel_MistralPixtral.AutoSize = true;
             this.linkLabel_MistralPixtral.Font = new System.Drawing.Font("新細明體", 12F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(136)));
-            this.linkLabel_MistralPixtral.Location = new System.Drawing.Point(548, 205);
+            this.linkLabel_MistralPixtral.Location = new System.Drawing.Point(548, 177);
             this.linkLabel_MistralPixtral.Name = "linkLabel_MistralPixtral";
-            this.linkLabel_MistralPixtral.Size = new System.Drawing.Size(209, 16);
+            this.linkLabel_MistralPixtral.Size = new System.Drawing.Size(172, 16);
             this.linkLabel_MistralPixtral.TabIndex = 18;
             this.linkLabel_MistralPixtral.TabStop = true;
             this.linkLabel_MistralPixtral.Tag = "";
-            this.linkLabel_MistralPixtral.Text = "前往取得MistralPixtral API key";
+            this.linkLabel_MistralPixtral.Text = "前往取得Mistral API key";
             this.linkLabel_MistralPixtral.LinkClicked += new System.Windows.Forms.LinkLabelLinkClickedEventHandler(this.linkLabel1_LinkClicked);
             // 
             // lblApiKey_MistralPixtral
-            // 
+            //
             this.lblApiKey_MistralPixtral.AutoSize = true;
-            this.lblApiKey_MistralPixtral.Location = new System.Drawing.Point(2, 208);
+            this.lblApiKey_MistralPixtral.Location = new System.Drawing.Point(2, 180);
             this.lblApiKey_MistralPixtral.Name = "lblApiKey_MistralPixtral";
-            this.lblApiKey_MistralPixtral.Size = new System.Drawing.Size(122, 12);
+            this.lblApiKey_MistralPixtral.Size = new System.Drawing.Size(116, 12);
             this.lblApiKey_MistralPixtral.TabIndex = 20;
-            this.lblApiKey_MistralPixtral.Text = "MistralPixtral API Key：";
+            this.lblApiKey_MistralPixtral.Text = "Mistral Vision API Key：";
             // 
             // txtApiKey_Llama4
-            // 
-            this.txtApiKey_Llama4.Location = new System.Drawing.Point(130, 230);
+            //
+            this.txtApiKey_Llama4.Location = new System.Drawing.Point(130, 202);
             this.txtApiKey_Llama4.Name = "txtApiKey_Llama4";
             this.txtApiKey_Llama4.Size = new System.Drawing.Size(216, 22);
             this.txtApiKey_Llama4.TabIndex = 9;
             this.txtApiKey_Llama4.TabStop = false;
             // 
             // label9
-            // 
+            //
             this.label9.AutoSize = true;
-            this.label9.Location = new System.Drawing.Point(352, 236);
+            this.label9.Location = new System.Drawing.Point(352, 208);
             this.label9.Name = "label9";
             this.label9.Size = new System.Drawing.Size(41, 12);
             this.label9.TabIndex = 2;
@@ -437,12 +378,8 @@
             // 
             this.cmbModel_Llama4.FormattingEnabled = true;
             this.cmbModel_Llama4.Items.AddRange(new object[] {
-            "gemini-2.5-flash-lite",
-            "gemini-2.5-flash",
-            "gemini-2.5-pro",
-            "gemini-3-flash-preview",
-            "gemini-3-pro-preview"});
-            this.cmbModel_Llama4.Location = new System.Drawing.Point(399, 233);
+            "meta-llama/llama-4-scout-17b-16e-instruct"});
+            this.cmbModel_Llama4.Location = new System.Drawing.Point(399, 205);
             this.cmbModel_Llama4.Name = "cmbModel_Llama4";
             this.cmbModel_Llama4.Size = new System.Drawing.Size(143, 20);
             this.cmbModel_Llama4.TabIndex = 3;
@@ -451,7 +388,7 @@
             // 
             this.linkLabel_Llama4.AutoSize = true;
             this.linkLabel_Llama4.Font = new System.Drawing.Font("新細明體", 12F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(136)));
-            this.linkLabel_Llama4.Location = new System.Drawing.Point(548, 233);
+            this.linkLabel_Llama4.Location = new System.Drawing.Point(548, 205);
             this.linkLabel_Llama4.Name = "linkLabel_Llama4";
             this.linkLabel_Llama4.Size = new System.Drawing.Size(177, 16);
             this.linkLabel_Llama4.TabIndex = 18;
@@ -461,9 +398,9 @@
             this.linkLabel_Llama4.LinkClicked += new System.Windows.Forms.LinkLabelLinkClickedEventHandler(this.linkLabel1_LinkClicked);
             // 
             // lblApiKey_Llama4
-            // 
+            //
             this.lblApiKey_Llama4.AutoSize = true;
-            this.lblApiKey_Llama4.Location = new System.Drawing.Point(26, 236);
+            this.lblApiKey_Llama4.Location = new System.Drawing.Point(26, 208);
             this.lblApiKey_Llama4.Name = "lblApiKey_Llama4";
             this.lblApiKey_Llama4.Size = new System.Drawing.Size(98, 12);
             this.lblApiKey_Llama4.TabIndex = 20;
@@ -479,20 +416,58 @@
             this.btnQuotaBoard.Text = "今日引擎使用量";
             this.btnQuotaBoard.UseVisualStyleBackColor = true;
             this.btnQuotaBoard.Click += new System.EventHandler(this.btnQuotaBoard_Click);
+            //
+            // lblActivationKeyboardKey
+            //
+            this.lblActivationKeyboardKey.AutoSize = true;
+            this.lblActivationKeyboardKey.Location = new System.Drawing.Point(8, 70);
+            this.lblActivationKeyboardKey.Name = "lblActivationKeyboardKey";
+            this.lblActivationKeyboardKey.Size = new System.Drawing.Size(65, 12);
+            this.lblActivationKeyboardKey.TabIndex = 22;
+            this.lblActivationKeyboardKey.Text = "啟動鍵盤：";
+            //
+            // cmbActivationKeyboardKey
+            //
+            this.cmbActivationKeyboardKey.DropDownStyle = System.Windows.Forms.ComboBoxStyle.DropDownList;
+            this.cmbActivationKeyboardKey.FormattingEnabled = true;
+            this.cmbActivationKeyboardKey.Location = new System.Drawing.Point(75, 66);
+            this.cmbActivationKeyboardKey.Name = "cmbActivationKeyboardKey";
+            this.cmbActivationKeyboardKey.Size = new System.Drawing.Size(90, 20);
+            this.cmbActivationKeyboardKey.TabIndex = 23;
+            //
+            // lblActivationMouseButton
+            //
+            this.lblActivationMouseButton.AutoSize = true;
+            this.lblActivationMouseButton.Location = new System.Drawing.Point(175, 70);
+            this.lblActivationMouseButton.Name = "lblActivationMouseButton";
+            this.lblActivationMouseButton.Size = new System.Drawing.Size(65, 12);
+            this.lblActivationMouseButton.TabIndex = 24;
+            this.lblActivationMouseButton.Text = "啟動滑鼠：";
+            //
+            // cmbActivationMouseButton
+            //
+            this.cmbActivationMouseButton.DropDownStyle = System.Windows.Forms.ComboBoxStyle.DropDownList;
+            this.cmbActivationMouseButton.FormattingEnabled = true;
+            this.cmbActivationMouseButton.Location = new System.Drawing.Point(242, 66);
+            this.cmbActivationMouseButton.Name = "cmbActivationMouseButton";
+            this.cmbActivationMouseButton.Size = new System.Drawing.Size(110, 20);
+            this.cmbActivationMouseButton.TabIndex = 25;
             // 
             // Form1
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(6F, 12F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
             this.ClientSize = new System.Drawing.Size(928, 544);
+            this.Controls.Add(this.cmbActivationMouseButton);
+            this.Controls.Add(this.lblActivationMouseButton);
+            this.Controls.Add(this.cmbActivationKeyboardKey);
+            this.Controls.Add(this.lblActivationKeyboardKey);
             this.Controls.Add(this.btnQuotaBoard);
             this.Controls.Add(this.lblApiKey_Llama4);
             this.Controls.Add(this.lblApiKey_MistralPixtral);
-            this.Controls.Add(this.lblApiKey_Pixtral);
             this.Controls.Add(this.linkLabel_Llama4);
             this.Controls.Add(this.linkLabel_MistralPixtral);
             this.Controls.Add(this.label5);
-            this.Controls.Add(this.linkLabel_Pixtral);
             this.Controls.Add(this.linkLabel1);
             this.Controls.Add(this.lblTokens);
             this.Controls.Add(this.numOverlaySeconds);
@@ -510,20 +485,17 @@
             this.Controls.Add(this.cmbModel_Llama4);
             this.Controls.Add(this.cmbModel_MistralPixtral);
             this.Controls.Add(this.btnCapture);
-            this.Controls.Add(this.cmbModel_Pixtral);
             this.Controls.Add(this.label9);
             this.Controls.Add(this.label7);
             this.Controls.Add(this.cmbModel);
-            this.Controls.Add(this.label6);
             this.Controls.Add(this.lblModel);
             this.Controls.Add(this.txtApiKey_Llama4);
             this.Controls.Add(this.txtApiKey_MistralPixtral);
             this.Controls.Add(this.lblApiKey_Gemini);
-            this.Controls.Add(this.txtApiKey_Pixtral);
             this.Controls.Add(this.txtApiKey);
             this.Icon = ((System.Drawing.Icon)(resources.GetObject("$this.Icon")));
             this.Name = "Form1";
-            this.Text = "ScreenOCRTranslator V0.94b";
+            this.Text = "ScreenOCRTranslator V01.000";
             this.FormClosing += new System.Windows.Forms.FormClosingEventHandler(this.Form1_FormClosing);
             this.Load += new System.EventHandler(this.Form1_Load);
             ((System.ComponentModel.ISupportInitialize)(this.numIdleSeconds)).EndInit();
@@ -556,11 +528,6 @@
         private System.Windows.Forms.Label lblTokens;
         private System.Windows.Forms.LinkLabel linkLabel1;
         private System.Windows.Forms.Label label5;
-        private System.Windows.Forms.Label lblApiKey_Pixtral;
-        private System.Windows.Forms.TextBox txtApiKey_Pixtral;
-        private System.Windows.Forms.Label label6;
-        private System.Windows.Forms.ComboBox cmbModel_Pixtral;
-        private System.Windows.Forms.LinkLabel linkLabel_Pixtral;
         private System.Windows.Forms.TextBox txtApiKey_MistralPixtral;
         private System.Windows.Forms.Label label7;
         private System.Windows.Forms.ComboBox cmbModel_MistralPixtral;
@@ -572,6 +539,10 @@
         private System.Windows.Forms.LinkLabel linkLabel_Llama4;
         private System.Windows.Forms.Label lblApiKey_Llama4;
         private System.Windows.Forms.Button btnQuotaBoard;
+        private System.Windows.Forms.Label lblActivationKeyboardKey;
+        private System.Windows.Forms.ComboBox cmbActivationKeyboardKey;
+        private System.Windows.Forms.Label lblActivationMouseButton;
+        private System.Windows.Forms.ComboBox cmbActivationMouseButton;
     }
 }
 

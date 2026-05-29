@@ -86,30 +86,6 @@ namespace ScreenOCRTranslator.Properties {
         [global::System.Configuration.UserScopedSettingAttribute()]
         [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
         [global::System.Configuration.DefaultSettingValueAttribute("")]
-        public string ApiKey_Pixtral {
-            get {
-                return ((string)(this["ApiKey_Pixtral"]));
-            }
-            set {
-                this["ApiKey_Pixtral"] = value;
-            }
-        }
-        
-        [global::System.Configuration.UserScopedSettingAttribute()]
-        [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
-        [global::System.Configuration.DefaultSettingValueAttribute("mistralai/Pixtral-12B-2409")]
-        public string ModelName_Pixtral {
-            get {
-                return ((string)(this["ModelName_Pixtral"]));
-            }
-            set {
-                this["ModelName_Pixtral"] = value;
-            }
-        }
-        
-        [global::System.Configuration.UserScopedSettingAttribute()]
-        [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
-        [global::System.Configuration.DefaultSettingValueAttribute("")]
         public string ApiKey_MistralPixtral {
             get {
                 return ((string)(this["ApiKey_MistralPixtral"]));
@@ -121,7 +97,7 @@ namespace ScreenOCRTranslator.Properties {
         
         [global::System.Configuration.UserScopedSettingAttribute()]
         [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
-        [global::System.Configuration.DefaultSettingValueAttribute("pixtral-large-latest")]
+        [global::System.Configuration.DefaultSettingValueAttribute("mistral-large-2512")]
         public string ModelName_MistralPixtral {
             get {
                 return ((string)(this["ModelName_MistralPixtral"]));
@@ -152,6 +128,30 @@ namespace ScreenOCRTranslator.Properties {
             }
             set {
                 this["ModelName_Llama4"] = value;
+            }
+        }
+        
+        [global::System.Configuration.UserScopedSettingAttribute()]
+        [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
+        [global::System.Configuration.DefaultSettingValueAttribute("q")]
+        public string ActivationKeyboardKey {
+            get {
+                return ((string)(this["ActivationKeyboardKey"]));
+            }
+            set {
+                this["ActivationKeyboardKey"] = value;
+            }
+        }
+        
+        [global::System.Configuration.UserScopedSettingAttribute()]
+        [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
+        [global::System.Configuration.DefaultSettingValueAttribute("Left")]
+        public string ActivationMouseButton {
+            get {
+                return ((string)(this["ActivationMouseButton"]));
+            }
+            set {
+                this["ActivationMouseButton"] = value;
             }
         }
     }

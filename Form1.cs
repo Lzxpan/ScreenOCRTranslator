@@ -26,8 +26,9 @@ namespace ScreenOCRTranslator
         private DateTime lastMoveTime;
         private bool isMonitoring = false;
         private IKeyboardMouseEvents globalHook;
-        private bool isQPressed = false;
-        private bool isLeftMouseDown = false;
+        private bool _activationKeyboardPressed = false;
+        private Keys _activationKeyboardKey = Keys.Q;
+        private MouseButtons _activationMouseButton = MouseButtons.Left;
         private bool isSelecting = false;
         private Rectangle lastCapturedRegion;
         private TranslationOverlayForm _overlay;
@@ -37,28 +38,42 @@ namespace ScreenOCRTranslator
         private bool _allowExit = false;
         private DailyQuotaTracker _quotaTracker;
         private QuotaBoardForm _quotaBoard;
+        private const string GeminiDefaultModel = "gemini-3.1-flash-lite";
+        private const string MistralVisionDefaultModel = "mistral-large-2512";
 
         public Form1()
         {
             InitializeComponent();
         }
 
+        private static readonly Keys[] ActivationKeyboardKeys = new Keys[]
+        {
+            Keys.A, Keys.B, Keys.C, Keys.D, Keys.E, Keys.F, Keys.G, Keys.H, Keys.I, Keys.J, Keys.K, Keys.L, Keys.M,
+            Keys.N, Keys.O, Keys.P, Keys.Q, Keys.R, Keys.S, Keys.T, Keys.U, Keys.V, Keys.W, Keys.X, Keys.Y, Keys.Z,
+            Keys.D0, Keys.D1, Keys.D2, Keys.D3, Keys.D4, Keys.D5, Keys.D6, Keys.D7, Keys.D8, Keys.D9,
+            Keys.F1, Keys.F2, Keys.F3, Keys.F4, Keys.F5, Keys.F6, Keys.F7, Keys.F8, Keys.F9, Keys.F10, Keys.F11, Keys.F12,
+            Keys.Space, Keys.ControlKey, Keys.Menu, Keys.ShiftKey
+        };
+
+        private static readonly MouseButtons[] ActivationMouseButtons = new MouseButtons[]
+        {
+            MouseButtons.Left,
+            MouseButtons.Middle,
+            MouseButtons.XButton1,
+            MouseButtons.XButton2
+        };
+
         private void Form1_Load(object sender, EventArgs e)
         {
+            InitializeActivationKeyOptions();
+            InitializeGeminiModelOptions();
             cmbModel.SelectedIndex = 0;
             cmbLanguage.SelectedIndex = 3;
             cmbTranslationMode.SelectedIndex = 1; // 預設 OCR 模式
-            cmbModel_Pixtral.Items.Clear();
-            cmbModel_Pixtral.Items.AddRange(new object[]
-            {
-                "mistralai/Pixtral-12B-2409"
-            });
-
             cmbModel_MistralPixtral.Items.Clear();
             cmbModel_MistralPixtral.Items.AddRange(new object[]
             {
-                "pixtral-large-latest",
-                "pixtral-large-2411"
+                MistralVisionDefaultModel
             });
 
             cmbModel_Llama4.Items.Clear();
@@ -67,13 +82,12 @@ namespace ScreenOCRTranslator
                 "meta-llama/llama-4-scout-17b-16e-instruct"
             });
 
-            cmbModel_Pixtral.SelectedIndex = 0;
             cmbModel_MistralPixtral.SelectedIndex = 0;
             cmbModel_Llama4.SelectedIndex = 0;
 
             // 載入儲存的 API Key 和模型
             txtApiKey.Text = Properties.Settings.Default.ApiKey;
-            string savedModel = Properties.Settings.Default.ModelName;           
+            string savedModel = NormalizeGeminiModel(Properties.Settings.Default.ModelName);
             if (!string.IsNullOrEmpty(savedModel))
             {
                 int index = cmbModel.Items.IndexOf(savedModel);
@@ -81,17 +95,8 @@ namespace ScreenOCRTranslator
                     cmbModel.SelectedIndex = index;
             }
 
-            txtApiKey_Pixtral.Text = Properties.Settings.Default.ApiKey_Pixtral;
-            string savedPixtralModel = Properties.Settings.Default.ModelName_Pixtral;
-            if (!string.IsNullOrEmpty(savedPixtralModel))
-            {
-                int index = cmbModel_Pixtral.Items.IndexOf(savedPixtralModel);
-                if (index >= 0)
-                    cmbModel_Pixtral.SelectedIndex = index;
-            }
-
             txtApiKey_MistralPixtral.Text = Properties.Settings.Default.ApiKey_MistralPixtral;
-            string savedMistralPixtralModel = Properties.Settings.Default.ModelName_MistralPixtral;
+            string savedMistralPixtralModel = NormalizeMistralVisionModel(Properties.Settings.Default.ModelName_MistralPixtral);
             if (!string.IsNullOrEmpty(savedMistralPixtralModel))
             {
                 int index = cmbModel_MistralPixtral.Items.IndexOf(savedMistralPixtralModel);
@@ -112,6 +117,7 @@ namespace ScreenOCRTranslator
             cmbLanguage.SelectedIndex = Properties.Settings.Default.LanguageModeIndex;
             numOverlaySeconds.Value = Math.Max(numOverlaySeconds.Minimum,
                 Math.Min(numOverlaySeconds.Maximum, Properties.Settings.Default.OverlaySeconds));
+            LoadActivationKeySettings();
 
             monitorTimer = new System.Windows.Forms.Timer();
             monitorTimer.Interval = 200; // 每 200ms 檢查一次滑鼠
@@ -123,9 +129,6 @@ namespace ScreenOCRTranslator
             globalHook.MouseUpExt += GlobalHook_MouseUpExt;
             linkLabel1.Links.Clear();
             linkLabel1.Links.Add(0, linkLabel1.Text.Length, "https://aistudio.google.com/api-keys"); // LinkData 存網址
-            linkLabel_Pixtral.Text = "前往查看Pixtral-12B-2409 (vLLM路線)";
-            linkLabel_Pixtral.Links.Clear();
-            linkLabel_Pixtral.Links.Add(0, linkLabel_Pixtral.Text.Length, "https://huggingface.co/mistralai/Pixtral-12B-2409");
             linkLabel_MistralPixtral.Text = "前往取得Mistral API key";
             linkLabel_MistralPixtral.Links.Clear();
             linkLabel_MistralPixtral.Links.Add(0, linkLabel_MistralPixtral.Text.Length, "https://console.mistral.ai/api-keys/");
@@ -137,6 +140,165 @@ namespace ScreenOCRTranslator
 
             _quotaTracker = DailyQuotaTracker.LoadOrCreate(Path.Combine(Application.StartupPath, "usage_daily.json"));
             _quotaTracker.EnsureToday();
+        }
+
+        private void InitializeGeminiModelOptions()
+        {
+            cmbModel.Items.Clear();
+            cmbModel.Items.AddRange(new object[]
+            {
+                GeminiDefaultModel,
+                "gemini-3-flash-preview",
+                "gemini-2.5-flash-lite",
+                "gemini-2.5-flash",
+                "gemini-2.5-pro"
+            });
+        }
+
+        private static string NormalizeGeminiModel(string model)
+        {
+            if (string.IsNullOrWhiteSpace(model)) return "";
+            string trimmed = model.Trim();
+            if (string.Equals(trimmed, "gemini-3.1-flash-lite-preview", StringComparison.OrdinalIgnoreCase))
+                return GeminiDefaultModel;
+            if (string.Equals(trimmed, "gemini-3-pro-preview", StringComparison.OrdinalIgnoreCase))
+                return GeminiDefaultModel;
+            return trimmed;
+        }
+
+        private static string NormalizeMistralVisionModel(string model)
+        {
+            if (string.IsNullOrWhiteSpace(model)) return "";
+            string trimmed = model.Trim();
+            if (string.Equals(trimmed, "pixtral-large-latest", StringComparison.OrdinalIgnoreCase) ||
+                string.Equals(trimmed, "pixtral-large-2411", StringComparison.OrdinalIgnoreCase))
+            {
+                return MistralVisionDefaultModel;
+            }
+            return trimmed;
+        }
+
+        private void InitializeActivationKeyOptions()
+        {
+            cmbActivationKeyboardKey.Items.Clear();
+            foreach (var key in ActivationKeyboardKeys)
+                cmbActivationKeyboardKey.Items.Add(GetKeyDisplayName(key));
+
+            cmbActivationMouseButton.Items.Clear();
+            foreach (var button in ActivationMouseButtons)
+                cmbActivationMouseButton.Items.Add(GetMouseDisplayName(button));
+
+            cmbActivationKeyboardKey.SelectedIndexChanged += (s, e) =>
+            {
+                _activationKeyboardKey = GetSelectedActivationKeyboardKey();
+                _activationKeyboardPressed = false;
+                UpdateActivationHint();
+            };
+
+            cmbActivationMouseButton.SelectedIndexChanged += (s, e) =>
+            {
+                _activationMouseButton = GetSelectedActivationMouseButton();
+                UpdateActivationHint();
+            };
+        }
+
+        private void LoadActivationKeySettings()
+        {
+            _activationKeyboardKey = ParseActivationKeyboardKey(Properties.Settings.Default.ActivationKeyboardKey);
+            _activationMouseButton = ParseActivationMouseButton(Properties.Settings.Default.ActivationMouseButton);
+
+            SelectActivationKeyboardKey(_activationKeyboardKey);
+            SelectActivationMouseButton(_activationMouseButton);
+            UpdateActivationHint();
+        }
+
+        private Keys GetSelectedActivationKeyboardKey()
+        {
+            int index = cmbActivationKeyboardKey.SelectedIndex;
+            if (index >= 0 && index < ActivationKeyboardKeys.Length)
+                return ActivationKeyboardKeys[index];
+            return Keys.Q;
+        }
+
+        private MouseButtons GetSelectedActivationMouseButton()
+        {
+            int index = cmbActivationMouseButton.SelectedIndex;
+            if (index >= 0 && index < ActivationMouseButtons.Length)
+                return ActivationMouseButtons[index];
+            return MouseButtons.Left;
+        }
+
+        private static Keys ParseActivationKeyboardKey(string saved)
+        {
+            if (!string.IsNullOrWhiteSpace(saved) &&
+                Enum.TryParse(saved, true, out Keys key) &&
+                ActivationKeyboardKeys.Contains(key))
+            {
+                return key;
+            }
+            return Keys.Q;
+        }
+
+        private static MouseButtons ParseActivationMouseButton(string saved)
+        {
+            if (!string.IsNullOrWhiteSpace(saved) &&
+                Enum.TryParse(saved, true, out MouseButtons button) &&
+                ActivationMouseButtons.Contains(button))
+            {
+                return button;
+            }
+            return MouseButtons.Left;
+        }
+
+        private void SelectActivationKeyboardKey(Keys key)
+        {
+            int index = Array.IndexOf(ActivationKeyboardKeys, key);
+            cmbActivationKeyboardKey.SelectedIndex = index >= 0 ? index : Array.IndexOf(ActivationKeyboardKeys, Keys.Q);
+        }
+
+        private void SelectActivationMouseButton(MouseButtons button)
+        {
+            int index = Array.IndexOf(ActivationMouseButtons, button);
+            cmbActivationMouseButton.SelectedIndex = index >= 0 ? index : Array.IndexOf(ActivationMouseButtons, MouseButtons.Left);
+        }
+
+        private static string GetKeyDisplayName(Keys key)
+        {
+            switch (key)
+            {
+                case Keys.D0: return "0";
+                case Keys.D1: return "1";
+                case Keys.D2: return "2";
+                case Keys.D3: return "3";
+                case Keys.D4: return "4";
+                case Keys.D5: return "5";
+                case Keys.D6: return "6";
+                case Keys.D7: return "7";
+                case Keys.D8: return "8";
+                case Keys.D9: return "9";
+                case Keys.Space: return "space";
+                case Keys.ControlKey: return "ctrl";
+                case Keys.Menu: return "alt";
+                case Keys.ShiftKey: return "shift";
+                default: return key.ToString().ToLowerInvariant();
+            }
+        }
+
+        private static string GetMouseDisplayName(MouseButtons button)
+        {
+            switch (button)
+            {
+                case MouseButtons.Left: return "Left";
+                case MouseButtons.Middle: return "Middle";
+                case MouseButtons.XButton1: return "XButton1";
+                case MouseButtons.XButton2: return "XButton2";
+                default: return MouseButtons.Left.ToString();
+            }
+        }
+
+        private void UpdateActivationHint()
+        {
+            label3.Text = $"按著{GetKeyDisplayName(_activationKeyboardKey)}+滑鼠{GetMouseDisplayName(_activationMouseButton)}，即可啟動框選擷取。";
         }
 
         private void Form1_FormClosing(object sender, FormClosingEventArgs e)
@@ -169,8 +331,6 @@ namespace ScreenOCRTranslator
 
             Properties.Settings.Default.ApiKey = txtApiKey.Text.Trim();
             Properties.Settings.Default.ModelName = cmbModel.SelectedItem?.ToString();
-            Properties.Settings.Default.ApiKey_Pixtral = txtApiKey_Pixtral.Text.Trim();
-            Properties.Settings.Default.ModelName_Pixtral = cmbModel_Pixtral.SelectedItem?.ToString();
             Properties.Settings.Default.ApiKey_MistralPixtral = txtApiKey_MistralPixtral.Text.Trim();
             Properties.Settings.Default.ModelName_MistralPixtral = cmbModel_MistralPixtral.SelectedItem?.ToString();
             Properties.Settings.Default.ApiKey_Llama4 = txtApiKey_Llama4.Text.Trim();
@@ -178,6 +338,8 @@ namespace ScreenOCRTranslator
             Properties.Settings.Default.TranslationModeIndex = cmbTranslationMode.SelectedIndex;
             Properties.Settings.Default.LanguageModeIndex = cmbLanguage.SelectedIndex;
             Properties.Settings.Default.OverlaySeconds = (int)numOverlaySeconds.Value;
+            Properties.Settings.Default.ActivationKeyboardKey = _activationKeyboardKey.ToString().ToLowerInvariant();
+            Properties.Settings.Default.ActivationMouseButton = _activationMouseButton.ToString();
             Properties.Settings.Default.Save(); // 寫入設定
             _quotaTracker?.Save();
             globalHook?.Dispose();
@@ -452,7 +614,7 @@ namespace ScreenOCRTranslator
                 _previewControl.Image = binary; // ✅ 這裡要先傳入 previewControl（例如 PictureBox）
 
                 // 使用 Tesseract 進行辨識
-                using (var engine = new TesseractEngine(@"./tessdata", _language, EngineMode.LstmOnly))
+                using (var engine = new TesseractEngine(TessdataResourceExtractor.EnsureTessdata(), _language, EngineMode.LstmOnly))
                 {
                     // 小區域框選：PSM 6 通常最穩
                     engine.DefaultPageSegMode = PageSegMode.SingleBlock;
@@ -460,8 +622,15 @@ namespace ScreenOCRTranslator
                     // 避免截圖被當成低 DPI 影像
                     engine.SetVariable("user_defined_dpi", "300");
 
-                    // 如果你原本的 binary 是 Bitmap，這樣最保險（不依賴 engine.Process(Bitmap) 是否存在）
-                    using (var pix = PixConverter.ToPix(binary))
+                    // .NET 10 使用 Tesseract netstandard API，需先把 Bitmap 轉為 PNG bytes 再載入 Pix。
+                    byte[] pngBytes;
+                    using (var ms = new MemoryStream())
+                    {
+                        binary.Save(ms, System.Drawing.Imaging.ImageFormat.Png);
+                        pngBytes = ms.ToArray();
+                    }
+
+                    using (var pix = Pix.LoadFromMemory(pngBytes))
                     using (var page = engine.Process(pix))
                     {
                         var text = page.GetText();
@@ -872,21 +1041,7 @@ namespace ScreenOCRTranslator
                 });
             }
 
-            // 2) Pixtral-12B-2409（進階路線 A：本地 vLLM）
-            //    預設 base URL 為 http://127.0.0.1:8000/v1
-            if (cmbModel_Pixtral.SelectedItem != null)
-            {
-                list.Add(new LlmCredential
-                {
-                    Provider = LlmProvider.Pixtral12BLocalVllm,
-                    ApiKey = txtApiKey_Pixtral.Text.Trim(), // vLLM token，可留空
-                    Model = cmbModel_Pixtral.SelectedItem.ToString(),
-                    BaseUrl = "http://127.0.0.1:8000/v1",
-                    DisplayName = "Pixtral-12B-2409(vLLM)"
-                });
-            }
-
-            // 3) Mistral Pixtral Large
+            // 2) Mistral Vision
             if (!string.IsNullOrWhiteSpace(txtApiKey_MistralPixtral.Text) && cmbModel_MistralPixtral.SelectedItem != null)
             {
                 list.Add(new LlmCredential
@@ -895,11 +1050,11 @@ namespace ScreenOCRTranslator
                     ApiKey = txtApiKey_MistralPixtral.Text.Trim(),
                     Model = cmbModel_MistralPixtral.SelectedItem.ToString(),
                     BaseUrl = "https://api.mistral.ai/v1",
-                    DisplayName = "Mistral Pixtral"
+                    DisplayName = "Mistral Vision"
                 });
             }
 
-            // 4) Groq Llama4
+            // 3) Groq Llama4
             if (!string.IsNullOrWhiteSpace(txtApiKey_Llama4.Text) && cmbModel_Llama4.SelectedItem != null)
             {
                 list.Add(new LlmCredential
@@ -958,20 +1113,20 @@ namespace ScreenOCRTranslator
                     last = gr;
                     _quotaTracker?.RecordResult(DailyQuotaTracker.MapProvider(c.Provider, c.Model), c.Model, gr?.Usage, false, gr?.Error);
                     _quotaTracker?.Save();
-                    bool canSwitch = LlmErrorPolicy.IsQuotaOrRateLimit(gr);
+                    bool canSwitch = LlmErrorPolicy.ShouldSwitchProvider(gr);
                     if (canSwitch)
                     {
                         if (i < credentials.Count - 1)
                         {
-                            txtResult.AppendText($"[切換] {c.DisplayName} 配額或速率受限，改用下一組 API Key。\r\n");
+                            txtResult.AppendText($"[切換] {c.DisplayName} 呼叫失敗，改用下一個已設定模型。\r\n");
                             continue;
                         }
 
                         return new GeminiResult
                         {
-                            HttpStatus = 429,
-                            Error = "所有API KEY額度已用盡",
-                            Text = "錯誤：所有API KEY額度已用盡"
+                            HttpStatus = gr?.HttpStatus ?? 0,
+                            Error = "所有已設定模型/API KEY皆無法使用",
+                            Text = "錯誤：所有已設定模型/API KEY皆無法使用"
                         };
                     }
 
@@ -1001,8 +1156,8 @@ namespace ScreenOCRTranslator
             return last ?? new GeminiResult
             {
                 HttpStatus = 429,
-                Error = "所有API KEY額度已用盡",
-                Text = "錯誤：所有API KEY額度已用盡"
+                Error = "所有已設定模型/API KEY皆無法使用",
+                Text = "錯誤：所有已設定模型/API KEY皆無法使用"
             };
         }
 
@@ -1049,20 +1204,20 @@ namespace ScreenOCRTranslator
                     last = gr;
                     _quotaTracker?.RecordResult(DailyQuotaTracker.MapProvider(c.Provider, c.Model), c.Model, gr?.Usage, false, gr?.Error);
                     _quotaTracker?.Save();
-                    bool canSwitch = LlmErrorPolicy.IsQuotaOrRateLimit(gr);
+                    bool canSwitch = LlmErrorPolicy.ShouldSwitchProvider(gr);
                     if (canSwitch)
                     {
                         if (i < credentials.Count - 1)
                         {
-                            txtResult.AppendText($"[切換] {c.DisplayName} 配額或速率受限，改用下一組 API Key。\r\n");
+                            txtResult.AppendText($"[切換] {c.DisplayName} 呼叫失敗，改用下一個已設定模型。\r\n");
                             continue;
                         }
 
                         return new GeminiResult
                         {
-                            HttpStatus = 429,
-                            Error = "所有API KEY額度已用盡",
-                            Text = "錯誤：所有API KEY額度已用盡"
+                            HttpStatus = gr?.HttpStatus ?? 0,
+                            Error = "所有已設定模型/API KEY皆無法使用",
+                            Text = "錯誤：所有已設定模型/API KEY皆無法使用"
                         };
                     }
 
@@ -1092,8 +1247,8 @@ namespace ScreenOCRTranslator
             return last ?? new GeminiResult
             {
                 HttpStatus = 429,
-                Error = "所有API KEY額度已用盡",
-                Text = "錯誤：所有API KEY額度已用盡"
+                Error = "所有已設定模型/API KEY皆無法使用",
+                Text = "錯誤：所有已設定模型/API KEY皆無法使用"
             };
         }
 
@@ -1294,14 +1449,14 @@ namespace ScreenOCRTranslator
 
         private void GlobalHook_KeyDown(object sender, KeyEventArgs e)
         {
-            if (e.KeyCode == Keys.Q)
-                isQPressed = true;
+            if (e.KeyCode == _activationKeyboardKey)
+                _activationKeyboardPressed = true;
         }
 
         private void GlobalHook_KeyUp(object sender, KeyEventArgs e)
         {
-            if (e.KeyCode == Keys.Q)
-                isQPressed = false;
+            if (e.KeyCode == _activationKeyboardKey)
+                _activationKeyboardPressed = false;
         }
 
         private void GlobalHook_MouseDownExt(object sender, MouseEventExtArgs e)
@@ -1322,9 +1477,8 @@ namespace ScreenOCRTranslator
                 }
             }
 
-            if (e.Button == MouseButtons.Left && isQPressed)
+            if (e.Button == _activationMouseButton && _activationKeyboardPressed)
             {
-                isLeftMouseDown = true;
                 StartSelectionOverlay(); // 👉 進入選取模式
                 e.Handled = true;
             }
@@ -1332,10 +1486,6 @@ namespace ScreenOCRTranslator
 
         private void GlobalHook_MouseUpExt(object sender, MouseEventExtArgs e)
         {
-            if (e.Button == MouseButtons.Left)
-            {
-                isLeftMouseDown = false;
-            }
         }
 
         private void SafeStatus(string msg)

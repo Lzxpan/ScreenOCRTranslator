@@ -14,6 +14,7 @@ namespace ScreenOCRTranslator
         [STAThread]
         static void Main()
         {
+            TessdataResourceExtractor.EnsureTessdata();
             Application.EnableVisualStyles();
             Application.SetCompatibleTextRenderingDefault(false);
             Application.Run(new Form1());

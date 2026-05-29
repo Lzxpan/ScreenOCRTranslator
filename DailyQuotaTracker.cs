@@ -39,15 +39,13 @@ namespace ScreenOCRTranslator
                 ["gemini|gemini-2.5-flash"] = (20, 5),
                 ["gemini|gemini-2.5-flash-lite"] = (20, 10),
                 ["gemini|gemini-3-flash-preview"] = (20, 5),
-                ["gemini|gemini-3.1-flash-lite-preview"] = (500, 15),
-                ["gemini|gemini-3-pro-preview"] = (500, 5),
+                ["gemini|gemini-3.1-flash-lite"] = (500, 15),
 
                 ["groq|meta-llama/llama-4-scout-17b-16e-instruct"] = (1000, 30),
 
                 ["mistral|pixtral-12b-2409"] = (500, 30),
                 ["mistral|mistralai/pixtral-12b-2409"] = (500, 30),
-                ["mistral|pixtral-large-latest"] = (200, 10),
-                ["mistral|pixtral-large-2411"] = (200, 10)
+                ["mistral|mistral-large-2512"] = (200, 10)
             };
 
         private DailyQuotaTracker(string filePath, DailyQuotaStore store)
@@ -155,10 +153,10 @@ namespace ScreenOCRTranslator
                 EnsureEntry("gemini", "gemini-2.5-flash");
                 EnsureEntry("gemini", "gemini-2.5-flash-lite");
                 EnsureEntry("gemini", "gemini-3-flash-preview");
-                EnsureEntry("gemini", "gemini-3.1-flash-lite-preview");
+                EnsureEntry("gemini", "gemini-3.1-flash-lite");
                 EnsureEntry("groq", "meta-llama/llama-4-scout-17b-16e-instruct");
                 EnsureEntry("mistral", "pixtral-12b-2409");
-                EnsureEntry("mistral", "pixtral-large-latest");
+                EnsureEntry("mistral", "mistral-large-2512");
 
                 return _store.Entries
                     .OrderBy(x => x.Provider)
@@ -211,8 +209,6 @@ namespace ScreenOCRTranslator
                 case LlmProvider.GroqLlama4:
                     return "groq";
                 case LlmProvider.MistralPixtral:
-                    return "mistral";
-                case LlmProvider.Pixtral12BLocalVllm:
                     return "mistral";
                 default:
                     return "other";

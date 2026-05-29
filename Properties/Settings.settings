@@ -17,23 +17,23 @@
     <Setting Name="OverlaySeconds" Type="System.Int32" Scope="User">
       <Value Profile="(Default)">5</Value>
     </Setting>
-    <Setting Name="ApiKey_Pixtral" Type="System.String" Scope="User">
-      <Value Profile="(Default)" />
-    </Setting>
-    <Setting Name="ModelName_Pixtral" Type="System.String" Scope="User">
-      <Value Profile="(Default)">mistralai/Pixtral-12B-2409</Value>
-    </Setting>
     <Setting Name="ApiKey_MistralPixtral" Type="System.String" Scope="User">
       <Value Profile="(Default)" />
     </Setting>
     <Setting Name="ModelName_MistralPixtral" Type="System.String" Scope="User">
-      <Value Profile="(Default)">pixtral-large-latest</Value>
+      <Value Profile="(Default)">mistral-large-2512</Value>
     </Setting>
     <Setting Name="ApiKey_Llama4" Type="System.String" Scope="User">
       <Value Profile="(Default)" />
     </Setting>
     <Setting Name="ModelName_Llama4" Type="System.String" Scope="User">
       <Value Profile="(Default)">meta-llama/llama-4-scout-17b-16e-instruct</Value>
+    </Setting>
+    <Setting Name="ActivationKeyboardKey" Type="System.String" Scope="User">
+      <Value Profile="(Default)">q</Value>
+    </Setting>
+    <Setting Name="ActivationMouseButton" Type="System.String" Scope="User">
+      <Value Profile="(Default)">Left</Value>
     </Setting>
   </Settings>
 </SettingsFile>
