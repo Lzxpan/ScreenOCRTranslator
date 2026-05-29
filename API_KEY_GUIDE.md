@@ -1,12 +1,14 @@
 # API Key 申請截圖教學
 
-本教學示範如何進入 Gemini、Mistral Vision 與 Groq Llama4 的 API key 申請頁面。截圖只保留登入/註冊入口與操作位置，不包含真實 API key；圖中的黑條是遮蔽示意，不代表網站上的固定顯示位置。
+本教學示範如何進入 Gemini、Mistral Vision 與 Groq Llama4 的 API key 申請頁面。供應商截圖會先說明登入/註冊頁面與 API Keys 入口；API key 的塗黑方式放在獨立示意圖，不會標在供應商網站畫面上。
 
 安全提醒：
 
 - API key 只會在建立時完整顯示一次，請立即保存到自己的密碼管理工具。
 - 不要把 API key 貼到 GitHub、截圖、聊天紀錄或公開文件。
 - 若截圖中出現 API key，請先用黑框完整塗黑再分享。
+
+![API key 遮蔽範例](images/api-key-guide/api-key-redaction-example.jpg)
 
 ## Gemini API Key
 
@@ -15,9 +17,10 @@
 操作流程：
 
 1. 開啟 Google AI Studio API keys 頁面。
-2. 使用 Google 帳號登入。
-3. 登入後按 `Create API key`。
-4. 複製產生的 key，貼回 ScreenOCRTranslator 的 `Gemini API Key` 欄位。
+2. 在登入頁輸入 Google 帳號，按 `下一步` 完成登入。
+3. 登入後會回到 API keys 頁面。
+4. 在 API keys 頁面按 `Create API key`。
+5. 複製產生的 key，貼回 ScreenOCRTranslator 的 `Gemini API Key` 欄位。
 
 ![Gemini API Key 申請](images/api-key-guide/gemini-api-key.jpg)
 
@@ -28,9 +31,10 @@
 操作流程：
 
 1. 開啟 Mistral Console API keys 頁面。
-2. 使用 Email、Google、Microsoft 或其他支援方式登入/註冊。
-3. 登入後進入 API Keys 頁面並建立新的 API key。
-4. 複製產生的 key，貼回 ScreenOCRTranslator 的 `Mistral Vision API Key` 欄位。
+2. 在登入頁使用 Email、Google、Microsoft 或其他支援方式登入/註冊。
+3. 登入後會回到 API Keys 頁面。
+4. 在 API Keys 頁面建立新的 API key。
+5. 複製產生的 key，貼回 ScreenOCRTranslator 的 `Mistral Vision API Key` 欄位。
 
 ![Mistral Vision API Key 申請](images/api-key-guide/mistral-api-key.jpg)
 
@@ -41,8 +45,9 @@
 操作流程：
 
 1. 開啟 GroqCloud API Keys 頁面。
-2. 使用 Google、GitHub、SSO 或 Email 登入/註冊。
-3. 登入後按 `Create API Key` 建立新的 key。
-4. 複製產生的 key，貼回 ScreenOCRTranslator 的 `Llama 4 API Key` 欄位。
+2. 在登入頁使用 Google、GitHub、SSO 或 Email 登入/註冊。
+3. 若進入其他頁面，可切到上方 `API Keys` 分頁。
+4. 登入後按 `Create API Key` 建立新的 key。
+5. 複製產生的 key，貼回 ScreenOCRTranslator 的 `Llama 4 API Key` 欄位。
 
 ![Groq Llama4 API Key 申請](images/api-key-guide/groq-api-key.jpg)

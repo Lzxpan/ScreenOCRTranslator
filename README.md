@@ -34,7 +34,7 @@ OCR 語言資料改為內嵌資源，單檔執行時會自動解壓到 `%LOCALAP
 新增「今日引擎使用量」面板：顯示每個引擎/模型的成功請求、失敗計數、Tokens 用量、上限與 RPM，並每日自動更新。<br>
 配額統計改為「成功請求為主、失敗另列計數」，便於判讀實際消耗。<br>
 更新新版主畫面與 Tokens 用量截圖，並移除 Tokens 面板中的舊 Pixtral 佔位列。<br>
-新增 `API_KEY_GUIDE.md`，提供 Gemini、Mistral Vision、Groq Llama4 的 API key 申請截圖教學與塗黑提醒。<br>
+新增 `API_KEY_GUIDE.md`，提供 Gemini、Mistral Vision、Groq Llama4 的登入頁面、API key 申請截圖教學與獨立塗黑範例。<br>
 
 V0.94b<br>
 1.送出 AI 翻譯請求時，會在滑鼠游標旁顯示「翻譯中...」。<br>
