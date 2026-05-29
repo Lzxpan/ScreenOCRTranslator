@@ -1,6 +1,6 @@
 # API Key 申請截圖教學
 
-本教學示範如何進入 Gemini、Mistral Vision 與 Groq Llama4 的 API key 申請頁面。供應商截圖會先說明登入/註冊頁面與 API Keys 入口；API key 的塗黑方式放在獨立示意圖，不會標在供應商網站畫面上。
+本教學示範如何進入 Gemini、Mistral Vision 與 Groq Llama4 的 API key 申請頁面。每個供應商都包含登入/註冊頁面與登入後的 API Keys 管理頁面；截圖中的 partial key、帳號或專案識別資訊已用黑框遮蔽。
 
 安全提醒：
 
@@ -22,7 +22,13 @@
 4. 在 API keys 頁面按 `Create API key`。
 5. 複製產生的 key，貼回 ScreenOCRTranslator 的 `Gemini API Key` 欄位。
 
-![Gemini API Key 申請](images/api-key-guide/gemini-api-key.jpg)
+登入頁面：
+
+![Gemini 登入頁面](images/api-key-guide/gemini-login.jpg)
+
+登入後 API Keys 頁面：
+
+![Gemini API Keys 頁面](images/api-key-guide/gemini-api-key.jpg)
 
 ## Mistral Vision API Key
 
@@ -36,7 +42,13 @@
 4. 在 API Keys 頁面建立新的 API key。
 5. 複製產生的 key，貼回 ScreenOCRTranslator 的 `Mistral Vision API Key` 欄位。
 
-![Mistral Vision API Key 申請](images/api-key-guide/mistral-api-key.jpg)
+登入頁面：
+
+![Mistral Vision 登入頁面](images/api-key-guide/mistral-login.jpg)
+
+登入後 API Keys 頁面：
+
+![Mistral Vision API Keys 頁面](images/api-key-guide/mistral-api-key.jpg)
 
 ## Groq Llama4 API Key
 
@@ -50,4 +62,10 @@
 4. 登入後按 `Create API Key` 建立新的 key。
 5. 複製產生的 key，貼回 ScreenOCRTranslator 的 `Llama 4 API Key` 欄位。
 
-![Groq Llama4 API Key 申請](images/api-key-guide/groq-api-key.jpg)
+登入頁面：
+
+![Groq Llama4 登入頁面](images/api-key-guide/groq-login.jpg)
+
+登入後 API Keys 頁面：
+
+![Groq Llama4 API Keys 頁面](images/api-key-guide/groq-api-key.jpg)
