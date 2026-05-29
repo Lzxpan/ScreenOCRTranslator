@@ -2,14 +2,6 @@
 
 本教學示範如何進入 Gemini、Mistral Vision 與 Groq Llama4 的 API key 申請頁面。每個供應商都包含登入/註冊頁面的文字說明與登入後的 API Keys 管理頁面截圖；截圖中的 partial key、帳號或專案識別資訊已用黑框遮蔽。
 
-安全提醒：
-
-- API key 只會在建立時完整顯示一次，請立即保存到自己的密碼管理工具。
-- 不要把 API key 貼到 GitHub、截圖、聊天紀錄或公開文件。
-- 若截圖中出現 API key，請先用黑框完整塗黑再分享。
-
-![API key 遮蔽範例](images/api-key-guide/api-key-redaction-example.jpg)
-
 ## Gemini API Key
 
 官方入口：[Google AI Studio API keys](https://aistudio.google.com/app/apikey)
