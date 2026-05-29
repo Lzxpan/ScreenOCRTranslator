@@ -1,6 +1,6 @@
 # API Key 申請截圖教學
 
-本教學示範如何進入 Gemini、Mistral Vision 與 Groq Llama4 的 API key 申請頁面。截圖只保留登入/註冊入口與操作位置，不包含真實 API key。
+本教學示範如何進入 Gemini、Mistral Vision 與 Groq Llama4 的 API key 申請頁面。截圖只保留登入/註冊入口與操作位置，不包含真實 API key；圖中的黑條是遮蔽示意，不代表網站上的固定顯示位置。
 
 安全提醒：
 
