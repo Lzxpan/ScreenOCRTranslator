@@ -60,11 +60,14 @@
 
 ```text
 Program.Main
+  -> Application.SetHighDpiMode(HighDpiMode.PerMonitorV2)
   -> TessdataResourceExtractor.EnsureTessdata()
   -> Application.EnableVisualStyles()
   -> Application.Run(new Form1())
   -> Form1_Load
 ```
+
+專案檔同時設定 `ApplicationHighDpiMode=PerMonitorV2`。這是框選 overlay 的必要條件，避免 Windows 在「縮放與配置」為 125% / 150% 等比例時對整個 WinForms 視窗做 DPI virtualization，造成背景截圖與框選座標被放大或錯位。`SelectionForm` 與 `TranslationOverlayForm` 皆使用 `AutoScaleMode.None`，因為它們的 `Bounds` 直接使用螢幕像素座標，不應再被 WinForms 字型或 DPI autoscaling 調整。
 
 `Form1_Load` 負責：
 
@@ -115,7 +118,7 @@ Form1.HandleCapturedImage
   -> 成功後 DrawTranslatedText
 ```
 
-啟動鍵由 `cmbActivationKeyboardKey` 與 `cmbActivationMouseButton` 設定，預設為 `q + Left`，會儲存在 `ActivationKeyboardKey` 與 `ActivationMouseButton`。鍵盤下拉與提示文字一律以小寫顯示；讀取設定時仍大小寫不敏感。滑鼠右鍵不在選單內，保留給 overlay 右鍵關閉使用。`SelectionForm` 只覆蓋游標所在螢幕，所以多螢幕環境下會用 `Screen.FromPoint(Cursor.Position)` 決定框選視窗範圍。回傳的 `Rectangle` 是螢幕絕對座標，可為負值，overlay 也使用同一座標顯示。
+啟動鍵由 `cmbActivationKeyboardKey` 與 `cmbActivationMouseButton` 設定，預設為 `q + Left`，會儲存在 `ActivationKeyboardKey` 與 `ActivationMouseButton`。鍵盤下拉與提示文字一律以小寫顯示；讀取設定時仍大小寫不敏感。滑鼠右鍵不在選單內，保留給 overlay 右鍵關閉使用。`SelectionForm` 只覆蓋游標所在螢幕，所以多螢幕環境下會用 `Screen.FromPoint(Cursor.Position)` 決定框選視窗範圍。回傳的 `Rectangle` 是螢幕絕對座標，可為負值，overlay 也使用同一座標顯示。DPI 縮放比例變更時，必須維持 `PerMonitorV2` 與 overlay `AutoScaleMode.None`，否則 `CopyFromScreen` 的 bitmap 與 WinForms 視窗座標會被 Windows 放大或虛擬化。
 
 ### 5.2 OCR 模式
 
@@ -495,14 +498,15 @@ dotnet publish ScreenOCRTranslator.csproj -c Release -r win-x64 --self-contained
 6. 第一次啟動後確認 `%LOCALAPPDATA%\ScreenOCRTranslator\tessdata` 有四個 `.traineddata`。
 7. 預設 `q + Left` 框選單螢幕區域。
 8. 預設 `q + Left` 框選副螢幕區域。
-9. 改成 `F8 + Middle` 後，舊組合不啟動，新組合可啟動；重開程式後設定仍保留。
-10. OCR 模式：繁中、簡中、日文、英文至少各一張樣本。
-11. AI 圖像翻譯模式：確認縮圖資訊、API 回傳、overlay 顯示。
-12. provider fallback：用無效 / 429 API Key 驗證是否切換下一個已設定 provider。
-13. 若測試流程需要 Gemini / Mistral / Groq API Key 但目前未填，停止測試並等待使用者輸入後再繼續。
-14. overlay 自動關閉與右鍵關閉。
-15. `今日引擎使用量` 是否更新成功與失敗次數。
-16. 關閉視窗時三個選項：關閉、縮到系統匣、取消。
+9. Windows「縮放與配置」設為 125% 或 150% 後，預設 `q + Left` 框選時 overlay 不應放大整個桌面，框選座標與截圖範圍需一致。
+10. 改成 `F8 + Middle` 後，舊組合不啟動，新組合可啟動；重開程式後設定仍保留。
+11. OCR 模式：繁中、簡中、日文、英文至少各一張樣本。
+12. AI 圖像翻譯模式：確認縮圖資訊、API 回傳、overlay 顯示。
+13. provider fallback：用無效 / 429 API Key 驗證是否切換下一個已設定 provider。
+14. 若測試流程需要 Gemini / Mistral / Groq API Key 但目前未填，停止測試並等待使用者輸入後再繼續。
+15. overlay 自動關閉與右鍵關閉。
+16. `今日引擎使用量` 是否更新成功與失敗次數。
+17. 關閉視窗時三個選項：關閉、縮到系統匣、取消。
 
 ## 16. 快速流程圖
 

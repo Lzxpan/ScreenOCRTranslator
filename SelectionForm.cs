@@ -24,6 +24,7 @@ namespace ScreenOCRTranslator
         public SelectionForm()
         {
             this.DoubleBuffered = true;
+            this.AutoScaleMode = AutoScaleMode.None;
             this.FormBorderStyle = FormBorderStyle.None;
             this.Opacity = 1;
             this.BackColor = Color.Gray;

@@ -6,6 +6,7 @@
     <RootNamespace>ScreenOCRTranslator</RootNamespace>
     <AssemblyName>ScreenOCRTranslator</AssemblyName>
     <ApplicationIcon>ScreenTranslator.ico</ApplicationIcon>
+    <ApplicationHighDpiMode>PerMonitorV2</ApplicationHighDpiMode>
     <GenerateAssemblyInfo>false</GenerateAssemblyInfo>
     <Nullable>disable</Nullable>
     <ImplicitUsings>disable</ImplicitUsings>

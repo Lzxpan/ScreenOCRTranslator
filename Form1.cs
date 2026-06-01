@@ -1650,6 +1650,7 @@ namespace ScreenOCRTranslator
                 _text = text ?? "";
                 _durationMs = Math.Max(200, durationMs); // 200ms 做個保護下限，避免有人設到 0
 
+                AutoScaleMode = AutoScaleMode.None;
                 StartPosition = FormStartPosition.Manual;
                 Bounds = region;
 

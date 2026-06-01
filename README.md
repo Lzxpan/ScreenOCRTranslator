@@ -22,6 +22,7 @@ V01.000<br>
 
 專案架構升級為 .NET 10 SDK-style Windows Forms，支援 win-x64 self-contained single-file 發佈。<br>
 OCR 語言資料改為內嵌資源，單檔執行時會自動解壓到 `%LOCALAPPDATA%\ScreenOCRTranslator\tessdata`。<br>
+修正 Windows「縮放與配置」設定為 125% 等非 100% 比例時，框選翻譯 overlay 會被系統放大導致整個畫面看起來放大的問題。<br>
 新增可儲存的啟動鍵設定，可分別選擇鍵盤鍵與滑鼠鍵，鍵盤部分以小寫顯示，預設為 q + 滑鼠左鍵。<br>
 更新 Gemini 模型名稱為 gemini-3.1-flash-lite，舊的 gemini-3.1-flash-lite-preview 會自動改用新名稱。<br>
 更新 Mistral Vision 模型為 mistral-large-2512，取代已淘汰的 Pixtral Large 雲端模型。<br>
