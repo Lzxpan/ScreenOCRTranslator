@@ -18,11 +18,16 @@ API Key 申請教學：請看 [API_KEY_GUIDE.md](API_KEY_GUIDE.md)，內含 Gemi
 建置指令：`dotnet restore`、`dotnet build -c Release`、`dotnet publish ScreenOCRTranslator.csproj -c Release -r win-x64 --self-contained true -p:PublishSingleFile=true -p:PublishTrimmed=false -p:PublishReadyToRun=false -p:DebugType=None -p:DebugSymbols=false -o publish\win-x64`。<br>
 Visual Studio 發布請使用 `FolderProfile`，不要勾選「修剪未使用的程式碼」；Windows Forms 不支援 trimming。<br>
 版本說明<br>
+V01.001<br>
+
+修正 Windows「縮放與配置」設定為 125% 等非 100% 比例時，框選翻譯 overlay 會被系統放大導致整個畫面看起來放大的問題。<br>
+將 WinForms 高 DPI 模式設定為 PerMonitorV2，讓框選截圖座標與 overlay 顯示維持螢幕像素一致。<br>
+重新發佈 win-x64 self-contained single-file `ScreenOCRTranslator.exe`。<br>
+
 V01.000<br>
 
 專案架構升級為 .NET 10 SDK-style Windows Forms，支援 win-x64 self-contained single-file 發佈。<br>
 OCR 語言資料改為內嵌資源，單檔執行時會自動解壓到 `%LOCALAPPDATA%\ScreenOCRTranslator\tessdata`。<br>
-修正 Windows「縮放與配置」設定為 125% 等非 100% 比例時，框選翻譯 overlay 會被系統放大導致整個畫面看起來放大的問題。<br>
 新增可儲存的啟動鍵設定，可分別選擇鍵盤鍵與滑鼠鍵，鍵盤部分以小寫顯示，預設為 q + 滑鼠左鍵。<br>
 更新 Gemini 模型名稱為 gemini-3.1-flash-lite，舊的 gemini-3.1-flash-lite-preview 會自動改用新名稱。<br>
 更新 Mistral Vision 模型為 mistral-large-2512，取代已淘汰的 Pixtral Large 雲端模型。<br>
